@@ -9,7 +9,7 @@
     "start:frontend": "cd Frontend && npm install && npm start",
     "deploy:backend": "cd Backend && npm run build && npm run deploy",
     "deploy:frontend": "cd Frontend && npm run build && npm run deploy",
-    "build":"npm install --prefix Backend && npm install --prefix Frontend && npm run build --prefix Frontend"
+    "build": "npm install --prefix Backend && npm install --prefix Frontend && npm run build --prefix Frontend"
   },
   "repository": {
     "type": "git",
@@ -21,5 +21,9 @@
   "bugs": {
     "url": "https://github.com/ved35/QuickHub/issues"
   },
-  "homepage": "https://github.com/ved35/QuickHub#readme"
+  "homepage": "https://github.com/ved35/QuickHub#readme",
+  "dependencies": {
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  }
 }

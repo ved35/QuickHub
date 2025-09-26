@@ -60,11 +60,13 @@ export const signUp = async (req, res, next) => {
     await newUser.save();
 
     const { password: pass, ...rest } = newUser._doc;
+    const token = generateToken(newUser._id, newUser.isAdmin, res);
 
     res.status(201).json({
       status: 'success',
       message: 'Sign up successful',
       data: rest,
+      token
     });
   } catch (error) {
     console.log('Error in signup controller', error.message);
@@ -92,7 +94,7 @@ export const signIn = async (req, res, next) => {
       return next(errorHandler(400, 'Invalid email or password'));
     }
 
-    generateToken(validUser._id, validUser.isAdmin, res);
+    const token = generateToken(validUser._id, validUser.isAdmin, res);
 
     const { password: pass, ...rest } = validUser._doc;
 
@@ -100,6 +102,7 @@ export const signIn = async (req, res, next) => {
       status: 'success',
       message: 'Login Successfull',
       data: rest,
+      token
     });
   } catch (error) {
     console.log('Sign in error :-', error);
@@ -108,7 +111,7 @@ export const signIn = async (req, res, next) => {
 };
 
 // ----------------- FORGOT PASSWORD -----------------
-export const forgotPassword = async (req, res) => {
+export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email || email === '') {
@@ -173,7 +176,7 @@ export const validateOtp = async (req, res, next) => {
   }
 };
 
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
   try {
     const { email, newPassword } = req.body;
     if (!email || !newPassword || email === '' || newPassword === '') {
