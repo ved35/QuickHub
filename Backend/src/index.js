@@ -37,7 +37,7 @@ app.use((error, req, res, next) => {
   });
 });
 
-if(process.env.NODE_ENV === "production"){
+if(process.env.NODE_ENV === "Production"){
     app.use(express.static(path.join(__dirname,"../frontend/dist")));
 
     app.get("*",(req,res)=>{
