@@ -1,0 +1,25 @@
+{
+  "name": "quickhub",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:backend": "cd Backend && npm install && npm start",
+    "start:frontend": "cd Frontend && npm install && npm start",
+    "deploy:backend": "cd Backend && npm run build && npm run deploy",
+    "deploy:frontend": "cd Frontend && npm run build && npm run deploy",
+    "build":"npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ved35/QuickHub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ved35/QuickHub/issues"
+  },
+  "homepage": "https://github.com/ved35/QuickHub#readme"
+}
