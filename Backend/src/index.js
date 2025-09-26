@@ -1,6 +1,4 @@
 import express from 'express';
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -15,26 +13,6 @@ const PORT = process.env.PORT;
 const __dirname = path.resolve();
 
 const app = express();
-// Swagger setup
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'QuickHub API',
-      version: '1.0.0',
-      description: 'API documentation for QuickHub backend',
-    },
-    servers: [
-      {
-        url: `http://localhost:${PORT}`,
-      },
-    ],
-  },
-  apis: ['./src/router/*.js', './src/controllers/*.js'], // Adjust paths as needed
-};
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(express.json());
 app.use(cookieParser());
