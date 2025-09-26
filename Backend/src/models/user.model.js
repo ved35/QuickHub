@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     dob: {
       type: Date,
-      required: true,
+      required: false,
     },
     name: {
       type: String,
@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
+      required: false,
     },
     username: {
       type: String,
