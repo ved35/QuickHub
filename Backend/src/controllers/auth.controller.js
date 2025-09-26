@@ -3,6 +3,7 @@ import bcryptjs from 'bcryptjs';
 import dotenv from 'dotenv';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { generateToken } from '../utils/utils.js';
+import Mailer from '../utils/mailer.js';
 
 dotenv.config();
 

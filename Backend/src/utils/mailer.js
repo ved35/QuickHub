@@ -43,4 +43,4 @@ const Mailer = async ({ name, otp, email }) => {
   }
 };
 
-module.exports = Mailer;
+export default Mailer;
