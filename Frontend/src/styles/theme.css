@@ -1,0 +1,168 @@
+/* QuickHub Color Theme */
+:root {
+  /* Primary Colors - Dark Blue Theme */
+  --primary-900: #1e3a8a;  /* Dark blue for headers/sidebar */
+  --primary-800: #1e40af;  /* Slightly lighter dark blue */
+  --primary-700: #1d4ed8;  /* Medium dark blue */
+  --primary-600: #2563eb;  /* Standard blue for buttons */
+  --primary-500: #3b82f6;  /* Lighter blue */
+  --primary-400: #60a5fa;  /* Light blue */
+  --primary-300: #93c5fd;  /* Very light blue */
+  --primary-200: #bfdbfe;  /* Extra light blue */
+  --primary-100: #dbeafe;  /* Lightest blue */
+  --primary-50: #eff6ff;   /* Background blue */
+
+  /* Secondary Colors - Teal/Green Theme */
+  --secondary-900: #134e4a;  /* Dark teal */
+  --secondary-800: #155e75;  /* Medium dark teal */
+  --secondary-700: #0f766e;  /* Standard teal */
+  --secondary-600: #0891b2;  /* Light teal */
+  --secondary-500: #06b6d4;  /* Lighter teal */
+  --secondary-400: #22d3ee;  /* Very light teal */
+  --secondary-300: #67e8f9;  /* Extra light teal */
+  --secondary-200: #a7f3d0;  /* Lightest teal */
+  --secondary-100: #ccfbf1;  /* Background teal */
+  --secondary-50: #f0fdfa;   /* Lightest background teal */
+
+  /* Neutral Colors */
+  --gray-900: #111827;  /* Darkest gray */
+  --gray-800: #1f2937;  /* Very dark gray */
+  --gray-700: #374151;  /* Dark gray */
+  --gray-600: #4b5563;  /* Medium dark gray */
+  --gray-500: #6b7280;  /* Medium gray */
+  --gray-400: #9ca3af;  /* Light gray */
+  --gray-300: #d1d5db;  /* Very light gray */
+  --gray-200: #e5e7eb;  /* Extra light gray */
+  --gray-100: #f3f4f6;  /* Lightest gray */
+  --gray-50: #f9fafb;   /* Background gray */
+
+  /* Status Colors */
+  --success-600: #059669;  /* Green for active status */
+  --success-100: #d1fae5;  /* Light green background */
+  --success-800: #065f46;  /* Dark green text */
+
+  --warning-600: #d97706;  /* Orange for warnings */
+  --warning-100: #fef3c7;  /* Light orange background */
+  --warning-800: #92400e;  /* Dark orange text */
+
+  --error-600: #dc2626;    /* Red for errors */
+  --error-100: #fee2e2;    /* Light red background */
+  --error-800: #991b1b;    /* Dark red text */
+
+  /* Background Colors */
+  --bg-primary: #ffffff;      /* White background */
+  --bg-secondary: #f8fafc;    /* Light gray background */
+  --bg-tertiary: #f1f5f9;     /* Very light blue-gray background */
+  --bg-sidebar: var(--primary-900);  /* Dark blue sidebar */
+  --bg-header: var(--primary-900);   /* Dark blue header */
+
+  /* Text Colors */
+  --text-primary: #1f2937;    /* Dark gray text */
+  --text-secondary: #6b7280;  /* Medium gray text */
+  --text-tertiary: #9ca3af;   /* Light gray text */
+  --text-white: #ffffff;      /* White text */
+  --text-inverse: #ffffff;    /* White text for dark backgrounds */
+
+  /* Border Colors */
+  --border-light: #e5e7eb;    /* Light border */
+  --border-medium: #d1d5db;   /* Medium border */
+  --border-dark: #9ca3af;     /* Dark border */
+
+  /* Shadow Colors */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Global Theme Classes */
+.theme-primary {
+  background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%);
+  color: var(--text-white);
+}
+
+.theme-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.theme-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  border-radius: 0.5rem;
+}
+
+.theme-button-primary {
+  background: var(--primary-600);
+  color: var(--text-white);
+  border: 1px solid var(--primary-600);
+  transition: all 0.2s ease-in-out;
+}
+
+.theme-button-primary:hover {
+  background: var(--primary-700);
+  border-color: var(--primary-700);
+}
+
+.theme-button-secondary {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+  transition: all 0.2s ease-in-out;
+}
+
+.theme-button-secondary:hover {
+  background: var(--gray-50);
+  border-color: var(--border-dark);
+}
+
+.theme-status-active {
+  background: var(--success-100);
+  color: var(--success-800);
+  border: 1px solid var(--success-100);
+}
+
+.theme-status-inactive {
+  background: var(--gray-100);
+  color: var(--gray-600);
+  border: 1px solid var(--gray-100);
+}
+
+.theme-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  transition: all 0.2s ease-in-out;
+}
+
+.theme-input:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  outline: none;
+}
+
+.theme-table-header {
+  background: var(--gray-50);
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.theme-table-row:hover {
+  background: var(--gray-50);
+}
+
+.theme-modal-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.theme-modal {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
+  border-radius: 0.75rem;
+}
