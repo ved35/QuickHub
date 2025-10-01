@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { showError, showWarning } from '../utils/toast';
 
+// const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 
-const baseURL = 'https://quickhub-dtjf.onrender.com/api' || 'http://localhost:3000/api';
+const baseURL = 'https://quickhub-dtjf.onrender.com/api' 
 
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
@@ -45,7 +46,7 @@ axiosInstance.interceptors.response.use(
       switch (status) {
         case 401:
           localStorage.removeItem('authToken');
-          showError('Session expired. Please login again.');
+          showError(error.response.data.message);
           window.location.href = '/signin';
           break;
         case 403:
@@ -54,7 +55,7 @@ axiosInstance.interceptors.response.use(
           break;
         case 404:
           console.error('❌ Not Found: Resource not found');
-          showError('Resource not found. Please check your request.');
+          showError(error.response.data.message);
           break;
         case 500:
           console.error('❌ Server Error: Internal server error');
