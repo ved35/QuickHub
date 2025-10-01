@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGlobalStore from '../context/globalStore';
 import { showSuccess } from '../utils/toast';
+import { FiMenu } from 'react-icons/fi';
+import { TiThMenu } from "react-icons/ti";
+
 
 const HeaderBar = () => {
   const user = useGlobalStore((state) => state.user) || { name: 'Superadmin' };
@@ -9,6 +12,8 @@ const HeaderBar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const isSidebarOpen = useGlobalStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useGlobalStore((state) => state.setSidebarOpen);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -56,11 +61,16 @@ const HeaderBar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-10 theme-primary shadow-lg flex items-center justify-between px-4 sm:px-8 py-7 w-full">
-      <div className="flex items-center gap-6">
-        <div className="flex items-center">
-          
-        </div>
+    <header className="sticky top-0 z-30 theme-primary shadow-lg flex items-center justify-between px-4 sm:px-8 py-5 w-full">
+      <div className="flex items-center gap-3">
+        <button
+          aria-label="Toggle sidebar"
+          className='sm:hidden !bg-transparent shadow-none'
+          // className="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-white/10 !bg-blue-600 focus:outline-none focus:ring-2 focus:ring-white"
+          onClick={() => setSidebarOpen(!isSidebarOpen)}
+        >
+          <TiThMenu className='h-6 w-6' />
+        </button>
       </div>
       <div className="flex items-center gap-6">
         <div className="relative" ref={dropdownRef}>

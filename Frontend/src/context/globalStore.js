@@ -5,6 +5,8 @@ const useGlobalStore = create((set) => ({
   setUser: (user) => set({ user }),
   theme: 'light',
   setTheme: (theme) => set({ theme }),
+  isSidebarOpen: false,
+  setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
 }));
 
 export default useGlobalStore;

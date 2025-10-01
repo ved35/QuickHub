@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import useGlobalStore from '../context/globalStore';
 
 const menu = [
   { name: 'Dashboard', path: '/dashboard' },
@@ -8,11 +9,23 @@ const menu = [
   { name: 'Transactions', path: '/dashboard/transactions' },
 ];
 
-const Sidebar = () => (
-  <aside
-    className="h-screen w-64 theme-primary flex-col shadow-xl fixed sm:relative z-20 transition-all duration-300
-    sm:flex hidden [&_a]:text-white [&_a:hover]:text-white [&_a:visited]:text-white"
-  >
+const Sidebar = () => {
+  const isSidebarOpen = useGlobalStore((state) => state.isSidebarOpen);
+  const setSidebarOpen = useGlobalStore((state) => state.setSidebarOpen);
+
+  return (
+  <>
+    {/* Overlay for small screens */}
+    {isSidebarOpen && (
+      <div
+        className="fixed inset-0 bg-black/40 z-20 sm:hidden"
+        onClick={() => setSidebarOpen(false)}
+      />
+    )}
+    <aside
+      className={`h-screen w-64 theme-primary flex flex-col shadow-xl fixed sm:relative z-30 transition-transform duration-300 sm:translate-x-0
+      ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} [&_a]:text-white [&_a:hover]:text-white [&_a:visited]:text-white`}
+    >
     <div className="p-6 flex items-center border-b" style={{borderColor: 'var(--primary-800)'}}>
       <div className="flex items-center">
         <div className="flex -space-x-1 mr-3">
@@ -28,7 +41,6 @@ const Sidebar = () => (
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-2xl tracking-wide text-white">Quickhub</span>
-          <span className="text-sm" style={{color: 'var(--primary-200)'}}>Quickhub</span>
         </div>
       </div>
     </div>
@@ -59,10 +71,22 @@ const Sidebar = () => (
         </NavLink>
       ))}
     </nav>
+    {/* Close button for small devices */}
+    <button
+      className="sm:hidden absolute top-4 right-4 text-white/80 hover:text-white"
+      onClick={() => setSidebarOpen(false)}
+      aria-label="Close sidebar"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
     <div className="p-4 text-xs text-white text-center">
       copyright 2025. All rights reserved.
     </div>
-  </aside>
-);
+    </aside>
+  </>
+  );
+};
 
 export default Sidebar;

@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminForgotPassword } from '../api';
+import { adminValidateOtp } from '../api';
 
-const ForgotPassword = () => {
+const ValidateOtp = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const onlyDigits = (value) => value.replace(/\D/g, '');
+
+  const handleChange = (e) => {
+    const digits = onlyDigits(e.target.value).slice(0, 6);
+    setOtp(digits);
+    if (error) setError('');
+  };
+
   const validate = () => {
-    if (!username.trim()) {
-      setError('Username is required');
+    if (!otp) {
+      setError('OTP is required');
       return false;
     }
-    if (username.trim().length < 3) {
-      setError('Username must be at least 3 characters');
+    if (otp.length !== 6) {
+      setError('OTP must be 6 digits');
       return false;
     }
     setError('');
@@ -26,10 +34,9 @@ const ForgotPassword = () => {
     if (!validate()) return;
     try {
       setIsSubmitting(true);
-      await adminForgotPassword(username.trim());
-      // Persist username for next steps
-      sessionStorage.setItem('resetUsername', username.trim());
-      navigate('/validate-otp');
+      const username = sessionStorage.getItem('resetUsername');
+      await adminValidateOtp({ username, otp });
+      navigate('/reset-password');
     } finally {
       setIsSubmitting(false);
     }
@@ -54,32 +61,34 @@ const ForgotPassword = () => {
           <span className="text-sm" style={{color: 'var(--primary-200)'}}>Quickhub</span>
         </div>
       </div>
-      
+
       <h1 className="text-3xl font-bold text-center text-white mb-2">
-        Forgot Password
+        Validate OTP
       </h1>
       <p className="text-center text-white mb-8 opacity-90">
-        Enter your username to reset your password
+        Enter the 6-digit code sent to your account
       </p>
-      
+
       <div className="theme-card p-8 w-full max-w-md">
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
             <label className="block text-sm font-medium mb-2" style={{color: 'var(--text-primary)'}}>
-              Username
+              One-Time Password (OTP)
             </label>
             <input
               type="text"
-              name="username"
-              value={username}
-              onChange={(e) => { setUsername(e.target.value); if (error) setError(''); }}
-              placeholder="Enter your username"
-              className={`theme-input w-full p-3 rounded-md ${error ? 'border-red-300' : ''}`}
+              inputMode="numeric"
+              pattern="\\d*"
+              name="otp"
+              value={otp}
+              onChange={handleChange}
+              placeholder="Enter 6-digit OTP"
+              className={`theme-input w-full p-3 rounded-md tracking-widest text-center text-lg ${error ? 'border-red-300' : ''}`}
               aria-invalid={!!error}
-              aria-describedby={error ? 'username-error' : undefined}
+              aria-describedby={error ? 'otp-error' : undefined}
             />
             {error && (
-              <p id="username-error" className="mt-1 text-sm" style={{color: 'var(--error-600)'}}>
+              <p id="otp-error" className="mt-1 text-sm" style={{color: 'var(--error-600)'}}>
                 {error}
               </p>
             )}
@@ -89,16 +98,16 @@ const ForgotPassword = () => {
             disabled={isSubmitting}
             className="theme-button-primary w-full py-3 rounded-md font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Submitting…' : 'Submit'}
+            {isSubmitting ? 'Validating…' : 'Validate'}
           </button>
           <div className="text-center">
             <button 
               type="button"
               className="text-sm font-medium hover:underline transition-all"
               style={{color: 'var(--primary-600)'}}
-              onClick={() => navigate('/signin')}
+              onClick={() => navigate('/forgot-password')}
             >
-              Back to Login
+              Back
             </button>
           </div>
         </form>
@@ -107,4 +116,6 @@ const ForgotPassword = () => {
   );
 };
 
-export default ForgotPassword;
+export default ValidateOtp;
+
+

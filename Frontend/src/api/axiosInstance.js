@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { showError, showWarning } from '../utils/toast';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+
+const baseURL = 'https://quickhub-dtjf.onrender.com/api' || 'http://localhost:3000/api';
 
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
