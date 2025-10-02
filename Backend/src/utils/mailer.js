@@ -16,7 +16,7 @@ console.log('NODEMAILER_USER', NODEMAILER_USER);
 console.log('NODEMAILER_PASS', NODEMAILER_PASS);
 
 const transporter = nodemailer.createTransport({
-  host: 'smpt.google.com',
+  host: 'smtp.gmail.com',
   port: 465,
   secure: true,
   service: 'gmail',
@@ -27,19 +27,40 @@ const transporter = nodemailer.createTransport({
 });
 
 const Mailer = async ({ name, otp, email }) => {
+  // Validate required environment variables
+  if (!NODEMAILER_USER || !NODEMAILER_PASS) {
+    console.error('Missing email configuration: NODEMAILER_USER or NODEMAILER_PASS not set');
+    throw new Error('Email service not configured properly');
+  }
+
+  // Validate input parameters
+  if (!email || !otp || !name) {
+    console.error('Missing required parameters for email:', { name, otp: !!otp, email });
+    throw new Error('Missing required email parameters');
+  }
+
   const mailOptions = {
     from: NODEMAILER_USER,
     to: email,
-    subject: 'verify your chat-app account',
+    subject: 'Verify your QuickHub account',
     html: otpTemplate({ name, otp }),
   };
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent :-', info.messageId);
+    console.log('Email sent successfully :-', info.messageId);
+    return info;
   } catch (error) {
-    console.log('error sending mail', error);
-    throw new Error('Error sending mail');
+    console.error('Error sending mail:', error.message);
+    
+    // Provide more specific error messages
+    if (error.code === 'EAUTH') {
+      throw new Error('Email authentication failed. Check your credentials.');
+    } else if (error.code === 'ECONNECTION') {
+      throw new Error('Failed to connect to email server. Check your internet connection.');
+    } else {
+      throw new Error(`Email sending failed: ${error.message}`);
+    }
   }
 };
 
