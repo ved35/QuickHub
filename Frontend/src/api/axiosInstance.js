@@ -10,7 +10,7 @@ const baseURL = 'https://quickhub-dtjf.onrender.com/api' ;
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
   baseURL: baseURL,
-  timeout: 10000,
+  timeout: 20000,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -74,10 +74,10 @@ axiosInstance.interceptors.response.use(
         data: data,
       });
     } else if (error.request) {
-      console.error('❌ Network Error: No response received');
+      console.error('❌ Network Error: No response received', error.request);
       showError('Network error. Please check your connection and try again.');
     } else {
-      console.error('❌ Request Setup Error:', error.message);
+      console.error('❌ Request Setup Error:', error.message, error.config);
       showError('Request failed. Please try again.');
     }
     

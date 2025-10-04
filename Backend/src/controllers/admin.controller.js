@@ -40,6 +40,8 @@ export const adminSignIn = async (req, res, next) => {
 // Admin Forgot Password -> send OTP
 export const adminForgotPassword = async (req, res, next) => {
   try {
+    console.log('Admin forgot password request body:', req.body);
+    console.log('Admin forgot password request headers:', req.headers);
     const { username } = req.body;
     if (!username || username === '') return next(errorHandler(400, 'Username is required'));
 

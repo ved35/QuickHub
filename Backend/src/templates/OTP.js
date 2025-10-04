@@ -211,9 +211,6 @@ const otpTemplate = ({ name, otp }) => {
                             <tr>
                               <td class="v-container-padding-padding" style="overflow-wrap:break-word;word-break:break-word;padding:20px;font-family:arial,helvetica,sans-serif;" align="left">
   
-                                <div style="font-size: 14px; line-height: 140%; text-align: left; word-wrap: break-word;">
-                                  <p style="font-size: 14px; line-height: 140%; text-align: left;"><span style="font-size: 12px; line-height: 16.8px; color: #000000;"><span style="line-height: 16.8px; font-size: 12px;">Happy Chating :)</span></span></p>
-                                </div>
   
                               </td>
                             </tr>

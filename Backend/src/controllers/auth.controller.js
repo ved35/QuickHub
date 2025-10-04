@@ -86,7 +86,7 @@ export const signIn = async (req, res, next) => {
     const validUser = await userModel.findOne({ email });
 
     if (!validUser) {
-      return next(errorHandler(404), 'Invalid email or password');
+      return next(errorHandler(404, 'Invalid email or password'));
     }
 
     const validPassword = bcryptjs.compareSync(password, validUser.password);
@@ -116,7 +116,7 @@ export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email || email === '') {
-      return next(errorHandler(400), 'Email is required');
+      return next(errorHandler(400, 'Email is required'));
     }
 
     const user = await userModel.findOne({ email });
@@ -200,6 +200,7 @@ export const resetPassword = async (req, res, next) => {
 
     const hashedPassword = await bcryptjs.hash(newPassword, 10);
     user.password = hashedPassword;
+    await user.save();
 
     return res.json({
       status: 'success',
