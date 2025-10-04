@@ -16,17 +16,25 @@ const NODEMAILER_PASS = process.env.NODEMAILER_PASS;
 console.log('NODEMAILER_USER', NODEMAILER_USER);
 console.log('NODEMAILER_PASS', NODEMAILER_PASS ? '***' : 'NOT SET');
 
-// Simplified configuration - let service handle the details
+// Try port 587 with explicit TLS settings
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // use STARTTLS
   auth: {
     user: NODEMAILER_USER,
     pass: NODEMAILER_PASS,
   },
+  tls: {
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
+  },
   // Add timeout settings to prevent hanging
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 15000,
+  debug: true, // Enable debug output
+  logger: true  // Log information to console
 });
 
 // Verify connection on startup
