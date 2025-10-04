@@ -134,7 +134,7 @@ export const forgotPassword = async (req, res, next) => {
 
     // Send OTP mail
     try {
-      let info =  Mailer({ name: user.name, otp, email: user.email });
+      let info = await Mailer({ name: user.name, otp, email: user.email });
       console.log('Email sent successfully :-', info?.messageId);
       return res.status(200).json({
         status: 'success',
