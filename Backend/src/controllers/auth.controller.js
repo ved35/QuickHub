@@ -134,7 +134,13 @@ export const forgotPassword = async (req, res, next) => {
 
     // Send OTP mail
     try {
-      await Mailer({ name: user.name, otp, email: user.email });
+      let info = await Mailer({ name: user.name, otp, email: user.email });
+      console.log('Email sent successfully :-', info?.messageId);
+      return res.status(200).json({
+        status: 'success',
+        message: 'OTP sent to email',
+        data: { email: user.email },
+      });
     } catch (emailError) {
       console.error('Email sending failed:', emailError.message);
       // Rollback OTP if email fails
@@ -143,12 +149,6 @@ export const forgotPassword = async (req, res, next) => {
       await user.save();
       return next(errorHandler(500, `Failed to send OTP email: ${emailError.message}`));
     }
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'OTP sent to email',
-      data: { email: user.email },
-    });
   } catch (error) {
     console.log('Forgot password error :-', error);
     return next(errorHandler(500, 'Internal Server Error'));
