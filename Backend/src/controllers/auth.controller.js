@@ -1,5 +1,4 @@
 import userModel from '../models/user.model.js';
-import changePasswordModel from '../models/changepassword.model.js';
 import bcryptjs from 'bcryptjs';
 import dotenv from 'dotenv';
 import { errorHandler } from '../middleware/errorHandler.js';
