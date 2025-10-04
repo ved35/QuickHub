@@ -112,49 +112,6 @@ export const signIn = async (req, res, next) => {
 };
 
 // ----------------- FORGOT PASSWORD -----------------
-// export const forgotPassword = async (req, res, next) => {
-//   try {
-//     const { email } = req.body;
-//     if (!email || email === '') {
-//       return next(errorHandler(400, 'Email is required'));
-//     }
-
-//     const user = await userModel.findOne({ email });
-//     if (!user) {
-//       return next(errorHandler(404, 'User not found'));
-//     }
-
-//     // Generate OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-//     const expiry = Date.now() + 5 * 60 * 1000; // 5 mins validity
-
-//     user.otp = otp;
-//     user.otpExpiry = expiry;
-//     await user.save();
-
-//     // Send OTP mail
-//     try {
-//       let info = await Mailer({ name: user.name, otp, email: user.email });
-//       console.log('Email sent successfully :-', info?.messageId);
-//       return res.status(200).json({
-//         status: 'success',
-//         message: 'OTP sent to email',
-//         data: { email: user.email },
-//       });
-//     } catch (emailError) {
-//       console.error('Email sending failed:', emailError.message);
-//       // Rollback OTP if email fails
-//       user.otp = null;
-//       user.otpExpiry = null;
-//       await user.save();
-//       return next(errorHandler(500, `Failed to send OTP email: ${emailError.message}`));
-//     }
-//   } catch (error) {
-//     console.log('Forgot password error :-', error);
-//     return next(errorHandler(500, 'Internal Server Error'));
-//   }
-// };
-
 export const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -175,29 +132,25 @@ export const forgotPassword = async (req, res, next) => {
     user.otpExpiry = expiry;
     await user.save();
 
-    // ✅ Respond first — before sending email
-    res.status(200).json({
-      status: 'success',
-      message: 'OTP is being sent to your email.',
-      data: { email: user.email },
-    });
-
-    // 🔄 Send email in background (non-blocking)
-    Mailer({ name: user.name, otp, email: user.email })
-      .then((info) => {
-        console.log('Email sent successfully:', info?.messageId);
-      })
-      .catch(async (emailError) => {
-        console.error('Email sending failed:', emailError.message);
-
-        // Optional: rollback OTP if email fails
-        user.otp = null;
-        user.otpExpiry = null;
-        await user.save();
+    // Send OTP mail
+    try {
+      let info = await Mailer({ name: user.name, otp, email: user.email });
+      console.log('Email sent successfully :-', info?.messageId);
+      return res.status(200).json({
+        status: 'success',
+        message: 'OTP sent to email',
+        data: { email: user.email },
       });
-
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError.message);
+      // Rollback OTP if email fails
+      user.otp = null;
+      user.otpExpiry = null;
+      await user.save();
+      return next(errorHandler(500, `Failed to send OTP email: ${emailError.message}`));
+    }
   } catch (error) {
-    console.log('Forgot password error:', error);
+    console.log('Forgot password error :-', error);
     return next(errorHandler(500, 'Internal Server Error'));
   }
 };
