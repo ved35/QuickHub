@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGlobalStore from '../context/globalStore';
-import { showSuccess } from '../utils/toast';
+import { showSuccess, showError } from '../utils/toast';
+import { adminLogout } from '../api/index';
 import { FiMenu } from 'react-icons/fi';
 import { TiThMenu } from "react-icons/ti";
 
@@ -42,22 +43,17 @@ const HeaderBar = () => {
     navigate('/change-password');
   };
 
-  const handleLogout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    
-    // Clear user from global store
-    setUser(null);
-    
-    // Close dropdown
-    setIsDropdownOpen(false);
-    
-    // Show success message
-    showSuccess('Logged out successfully!');
-    
-    // Navigate to signin page
-    navigate('/signin');
+  const handleLogout = async () => {
+    try {
+      await adminLogout();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      setIsDropdownOpen(false);
+      navigate('/signin');
+    } catch (error) {
+      showError(error.response?.data?.message || 'Logout failed. Please try again.');
+    }
   };
 
   return (

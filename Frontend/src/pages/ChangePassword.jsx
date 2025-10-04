@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '../utils/toast';
+import { adminChangePassword } from '../api/index';
 
 const ChangePassword = () => {
   const navigate = useNavigate();
@@ -64,19 +65,13 @@ const ChangePassword = () => {
     setIsLoading(true);
     
     try {
-      // TODO: Implement API call to change password
-      console.log('Changing password...', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Show success message and redirect
-      showSuccess('Password changed successfully!');
+      await adminChangePassword({
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword
+      });
       navigate('/dashboard');
-      
     } catch (error) {
-      console.error('Error changing password:', error);
-      showError('Failed to change password. Please try again.');
+      showError(error.response?.data?.message || 'Failed to change password. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -43,11 +43,31 @@ export const adminResetPassword = async ({ username, newPassword }) => {
   return true;
 };
 
+export const adminChangePassword = async ({ oldPassword, newPassword }) => {
+  console.log('Changing password with oldPassword:', oldPassword, 'newPassword:', newPassword);
+  const response = await axiosInstance.post('/auth/admin/change-password', { oldPassword, newPassword });
+  console.log('Change password response:', response);
+  const { message } = response.data || {};
+  if (message) {
+    showSuccess(message);
+  }
+  return true;
+}
+
+export const adminLogout = async () => {
+  const response = await axiosInstance.post('/auth/logout');
+  const { message } = response.data || {};
+  if (message) {
+    showSuccess(message);
+    localStorage.removeItem('authToken');
+  }
+}
 export default {
   adminSignIn,
   adminForgotPassword,
   adminValidateOtp,
   adminResetPassword,
+  adminChangePassword
 };
 
 
