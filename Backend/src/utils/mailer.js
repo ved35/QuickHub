@@ -95,10 +95,22 @@ if (result.error) {
 }
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+// For testing, use Resend's domain. For production, verify your own domain.
 const FROM_EMAIL = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
+// Validate FROM_EMAIL is not a Gmail/Yahoo/etc address
+if (FROM_EMAIL.includes('@gmail.com') || FROM_EMAIL.includes('@yahoo.com') || FROM_EMAIL.includes('@hotmail.com')) {
+  console.warn('⚠️  WARNING: Cannot use Gmail/Yahoo/Hotmail as FROM address with Resend.');
+  console.warn('Using onboarding@resend.dev instead.');
+  console.warn('For production, verify your own domain at https://resend.com/domains');
+}
+
+const validFromEmail = FROM_EMAIL.includes('@gmail.com') || FROM_EMAIL.includes('@yahoo.com') || FROM_EMAIL.includes('@hotmail.com')
+  ? 'onboarding@resend.dev'
+  : FROM_EMAIL;
+
 console.log('RESEND_API_KEY:', RESEND_API_KEY ? '***' : 'NOT SET');
-console.log('FROM_EMAIL:', FROM_EMAIL);
+console.log('FROM_EMAIL:', validFromEmail);
 
 // Initialize Resend
 const resend = new Resend(RESEND_API_KEY);
@@ -116,7 +128,7 @@ const Mailer = async ({ name, otp, email }) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: `QuickHub <${FROM_EMAIL}>`,
+      from: `QuickHub <${validFromEmail}>`,
       to: [email],
       subject: 'Verify your QuickHub account',
       html: otpTemplate({ name, otp }),
