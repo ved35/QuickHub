@@ -177,9 +177,44 @@ export const adminResetPassword = async (req, res, next) => {
   }
 };
 
+export const adminchangePassword = async (req, res, next) => {
+  try {
+    // use authenticated user's email (set by auth middleware)
+    const username = req.user?.username;
+    if (!username) return next(errorHandler(401, 'Unauthorized'));
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword || currentPassword === '' || newPassword === '') {
+      return next(errorHandler(400, 'All fields are required'));
+    }
+
+    const user = await userModel.findOne({ email });
+    if (!user) return next(errorHandler(404, 'User not found'));
+
+    const validPassword = bcryptjs.compareSync(currentPassword, user.password);
+    if (!validPassword) return next(errorHandler(400, 'Current password is incorrect'));
+
+    const sameAsOld = bcryptjs.compareSync(newPassword, user.password);
+    if (sameAsOld) return next(errorHandler(400, 'New password must be different from current password'));
+
+    user.password = await bcryptjs.hash(newPassword, 10);
+    user.passwordChangedAt = Date.now();
+    await user.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.log('Change password error :-', error);
+    return next(errorHandler(500, 'Internal Server Error'));
+  }
+};
+
 export default {
   adminSignIn,
   adminForgotPassword,
   adminValidateOtp,
   adminResetPassword,
+  adminchangePassword,
 };

@@ -1,4 +1,5 @@
 import userModel from '../models/user.model.js';
+import changePasswordModel from '../models/changepassword.model.js';
 import bcryptjs from 'bcryptjs';
 import dotenv from 'dotenv';
 import { errorHandler } from '../middleware/errorHandler.js';
@@ -209,6 +210,122 @@ export const resetPassword = async (req, res, next) => {
     });
   } catch (error) {
     console.log('Reset password error :-', error);
+    return next(errorHandler(500, 'Internal Server Error'));
+  }
+};
+
+// ----------------- EDIT PROFILE -----------------
+export const editProfile = async (req, res, next) => {
+  try {
+    const { name, gender, phone, email } = req.body;
+
+    if (
+      (name === undefined || name === null) &&
+      (gender === undefined || gender === null) &&
+      (phone === undefined || phone === null) &&
+      (email === undefined || email === null)
+    ) {
+      return next(errorHandler(400, 'At least one field is required to update'));
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return next(errorHandler(404, 'User not found'));
+    }
+
+    // If email changed, ensure uniqueness
+    if (email && email !== user.email) {
+      const exists = await userModel.findOne({ email });
+      if (exists) {
+        return next(errorHandler(400, 'Email already exists'));
+      }
+      user.email = email;
+    }
+
+    if (name !== undefined && name !== null) user.name = name;
+    if (gender !== undefined && gender !== null) user.gender = gender;
+    if (phone !== undefined && phone !== null) user.phone = phone;
+
+    await user.save();
+
+    const { password: pass, ...rest } = user._doc;
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Profile updated successfully',
+      data: rest,
+    });
+  } catch (error) {
+    console.log('Edit profile error :-', error);
+    return next(errorHandler(500, 'Internal Server Error'));
+  }
+};
+
+// ----------------- CHANGE PASSWORD -----------------
+export const changePassword = async (req, res, next) => {
+  try {
+    // use authenticated user's email (set by auth middleware)
+    const email = req.user?.email;
+    if (!email) return next(errorHandler(401, 'Unauthorized'));
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword || currentPassword === '' || newPassword === '') {
+      return next(errorHandler(400, 'All fields are required'));
+    }
+
+    const user = await userModel.findOne({ email });
+    if (!user) return next(errorHandler(404, 'User not found'));
+
+    const validPassword = bcryptjs.compareSync(currentPassword, user.password);
+    if (!validPassword) return next(errorHandler(400, 'Current password is incorrect'));
+
+    const sameAsOld = bcryptjs.compareSync(newPassword, user.password);
+    if (sameAsOld) return next(errorHandler(400, 'New password must be different from current password'));
+
+    user.password = await bcryptjs.hash(newPassword, 10);
+    user.passwordChangedAt = Date.now();
+    await user.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.log('Change password error :-', error);
+    return next(errorHandler(500, 'Internal Server Error'));
+  }
+};
+
+// ----------------- LOGOUT -----------------
+
+export const logout = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next(errorHandler(400, 'Authorization token missing'));
+    }
+
+    const token = authHeader.split(' ')[1].trim();
+    if (!token) return next(errorHandler(400, 'Authorization token missing'));
+
+    // Try to decode token to get expiry and user id info
+    const decoded = jwt.decode(token) || {};
+    const expiresAt = decoded.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const userId = req.user?.id || req.user?._id || decoded.sub || decoded.id || decoded.userId;
+
+    // Save token into blacklist (ignore duplicate key errors)
+    try {
+      await TokenBlacklist.create({ token, userId, expiresAt, meta: { ip: req.ip } });
+    } catch (err) {
+      // duplicate or other write errors can be ignored for logout (token already blacklisted)
+      if (err.code && err.code !== 11000) {
+        console.error('Token blacklist save error', err);
+      }
+    }
+
+    return res.status(200).json({ status: 'success', message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error :-', error);
     return next(errorHandler(500, 'Internal Server Error'));
   }
 };
