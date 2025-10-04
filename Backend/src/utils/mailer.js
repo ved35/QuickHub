@@ -15,10 +15,17 @@ const NODEMAILER_PASS = process.env.NODEMAILER_PASS;
 console.log('NODEMAILER_USER', NODEMAILER_USER);
 console.log('NODEMAILER_PASS', NODEMAILER_PASS);
 
+// const transporter = nodemailer.createTransport({
+//   host: 'smtp.gmail.com',
+//   port: 465,
+//   secure: true,
+//   service: 'gmail',
+//   auth: {
+//     user: NODEMAILER_USER,
+//     pass: NODEMAILER_PASS,
+//   },
+// });
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
   service: 'gmail',
   auth: {
     user: NODEMAILER_USER,
