@@ -1,6 +1,7 @@
 import userModel from '../models/user.model.js';
 import bcryptjs from 'bcryptjs';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { generateToken } from '../utils/utils.js';
 import Mailer from '../utils/mailer.js';
@@ -264,18 +265,19 @@ export const editProfile = async (req, res, next) => {
 export const changePassword = async (req, res, next) => {
   try {
     // use authenticated user's email (set by auth middleware)
-    const email = req.user?.email;
-    if (!email) return next(errorHandler(401, 'Unauthorized'));
+    const username = req.user?.id;
+    console.log('Authenticated username :-', req.user,  req.body);
+    if (!username) return next(errorHandler(401, 'Unauthorized'));
 
-    const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword || currentPassword === '' || newPassword === '') {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword || oldPassword === '' || newPassword === '') {
       return next(errorHandler(400, 'All fields are required'));
     }
 
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ _id: username });
     if (!user) return next(errorHandler(404, 'User not found'));
 
-    const validPassword = bcryptjs.compareSync(currentPassword, user.password);
+    const validPassword = bcryptjs.compareSync(oldPassword, user.password);
     if (!validPassword) return next(errorHandler(400, 'Current password is incorrect'));
 
     const sameAsOld = bcryptjs.compareSync(newPassword, user.password);
@@ -299,24 +301,21 @@ export const changePassword = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization || req.headers.Authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = req.headers.authorization || req.cookies.jwt || req.headers.cookie;
+    console.log('Logout request by user :-', token);           
+    if (!token) {
       return next(errorHandler(400, 'Authorization token missing'));
     }
-
-    const token = authHeader.split(' ')[1].trim();
-    if (!token) return next(errorHandler(400, 'Authorization token missing'));
-
-    // Try to decode token to get expiry and user id info
+    
     const decoded = jwt.decode(token) || {};
+    console.log('Logout decoded by user :-', decoded);           
     const expiresAt = decoded.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000);
     const userId = req.user?.id || req.user?._id || decoded.sub || decoded.id || decoded.userId;
 
-    // Save token into blacklist (ignore duplicate key errors)
+
     try {
       await TokenBlacklist.create({ token, userId, expiresAt, meta: { ip: req.ip } });
     } catch (err) {
-      // duplicate or other write errors can be ignored for logout (token already blacklisted)
       if (err.code && err.code !== 11000) {
         console.error('Token blacklist save error', err);
       }

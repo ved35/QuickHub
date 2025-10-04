@@ -102,20 +102,10 @@ export const adminValidateOtp = async (req, res, next) => {
 
     const adminUser = await userModel.findOne({ username });
     if (!adminUser) return next(errorHandler(404, 'User not found'));
-
-    // verify against recent ForgotPasswordAdmin record
-    const record = await ForgotPasswordAdmin.findOne({
-      username,
-      otp,
-      used: false,
-    }).sort({ createdAt: -1 });
-    if (!record || record.otpExpiry < new Date()) {
+   
+    if (adminUser.otp !== otp || adminUser.otpExpiry < new Date()) {
       return next(errorHandler(400, 'Invalid or expired OTP'));
     }
-
-    // mark record used and clear user otp for compatibility
-    record.used = true;
-    await record.save();
 
     adminUser.otp = null;
     adminUser.otpExpiry = null;
@@ -179,19 +169,19 @@ export const adminResetPassword = async (req, res, next) => {
 
 export const adminchangePassword = async (req, res, next) => {
   try {
-    // use authenticated user's email (set by auth middleware)
-    const username = req.user?.username;
+    const username = req.user?.id;
+    console.log('Authenticated username :-', req.user,  req.body);
     if (!username) return next(errorHandler(401, 'Unauthorized'));
 
-    const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword || currentPassword === '' || newPassword === '') {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword || oldPassword === '' || newPassword === '') {
       return next(errorHandler(400, 'All fields are required'));
     }
 
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ _id: username });
     if (!user) return next(errorHandler(404, 'User not found'));
 
-    const validPassword = bcryptjs.compareSync(currentPassword, user.password);
+    const validPassword = bcryptjs.compareSync(oldPassword, user.password);
     if (!validPassword) return next(errorHandler(400, 'Current password is incorrect'));
 
     const sameAsOld = bcryptjs.compareSync(newPassword, user.password);
