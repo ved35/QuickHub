@@ -26,6 +26,11 @@ app.use(
   })
 );
 
+// Test endpoint to verify server is responding
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
+
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 

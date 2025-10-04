@@ -72,7 +72,11 @@ export const adminForgotPassword = async (req, res, next) => {
       console.log('Email sent successfully :-', info?.messageId);
       return res
         .status(200)
-        .json({ status: 'success', message: 'OTP sent to admin email', data: { email: adminUser.email }, });
+        .json({ 
+          status: 'success', 
+          message: 'OTP sent to admin email', 
+          data: { username: adminUser.username, email: adminUser.email } 
+        });
     } catch (emailError) {
       console.error('Email sending failed:', emailError.message);
       adminUser.otp = null;

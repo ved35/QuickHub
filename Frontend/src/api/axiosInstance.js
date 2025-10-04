@@ -76,6 +76,9 @@ axiosInstance.interceptors.response.use(
     } else if (error.request) {
       console.error('❌ Network Error: No response received', error.request);
       showError('Network error. Please check your connection and try again.');
+    } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      console.error('❌ Request Timeout:', error.message);
+      showError('Request timed out. The server is taking too long to respond. Please try again.');
     } else {
       console.error('❌ Request Setup Error:', error.message, error.config);
       showError('Request failed. Please try again.');
