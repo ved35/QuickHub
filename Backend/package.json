@@ -22,7 +22,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.2",
     "nodemailer": "^7.0.6",
-    "quickhub": "file:.."
+    "quickhub": "file:..",
+    "resend": "^6.1.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",
