@@ -5,6 +5,7 @@ import { showSuccess, showError } from '../utils/toast';
 import { adminLogout } from '../api/index';
 import { FiMenu } from 'react-icons/fi';
 import { TiThMenu } from "react-icons/ti";
+import logo from '../assets/logo.png';
 
 
 const HeaderBar = () => {

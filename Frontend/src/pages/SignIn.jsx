@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminSignIn } from '../api';
+import logo from '../assets/white-logo.png';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -50,22 +51,8 @@ const SignIn = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen theme-primary">
-      <div className="flex items-center mb-8">
-        <div className="flex -space-x-1 mr-4">
-          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-            <div className="w-4 h-4 rounded-full" style={{backgroundColor: 'var(--primary-600)'}}></div>
-          </div>
-          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-            <div className="w-4 h-4 rounded-full" style={{backgroundColor: 'var(--primary-600)'}}></div>
-          </div>
-          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-            <div className="w-4 h-4 rounded-full" style={{backgroundColor: 'var(--primary-600)'}}></div>
-          </div>
-        </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-3xl text-white">Quickhub</span>
-          <span className="text-sm" style={{color: 'var(--primary-200)'}}>Quickhub</span>
-        </div>
+      <div className="flex items-center mb-2">
+        <img src={logo} alt="Quickhub" className="h-28 w-auto drop-shadow" />
       </div>
       
       <h1 className="text-3xl font-bold text-center text-white mb-8">

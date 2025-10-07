@@ -1,28 +1,29 @@
 /* QuickHub Color Theme */
 :root {
-  /* Primary Colors - Dark Blue Theme */
-  --primary-900: #1e3a8a;  /* Dark blue for headers/sidebar */
-  --primary-800: #1e40af;  /* Slightly lighter dark blue */
-  --primary-700: #1d4ed8;  /* Medium dark blue */
-  --primary-600: #2563eb;  /* Standard blue for buttons */
-  --primary-500: #3b82f6;  /* Lighter blue */
-  --primary-400: #60a5fa;  /* Light blue */
-  --primary-300: #93c5fd;  /* Very light blue */
-  --primary-200: #bfdbfe;  /* Extra light blue */
-  --primary-100: #dbeafe;  /* Lightest blue */
-  --primary-50: #eff6ff;   /* Background blue */
+  /* Primary Colors - Teal Theme (from provided values) */
+  /* Kotlin refs: PrimaryTeal=#0B4F5F, PrimaryTealDark=#083D4A, PrimaryTealLight=#1A6B7F */
+  --primary-900: #083d4a;  /* PrimaryTealDark */
+  --primary-800: #0b4f5f;  /* PrimaryTeal (darker usage) */
+  --primary-700: #0b4f5f;  /* PrimaryTeal */
+  --primary-600: #1a6b7f;  /* PrimaryTealLight (buttons) */
+  --primary-500: #1a6b7f;  /* Light variant */
+  --primary-400: #2a7f92;  /* Derived lighter */
+  --primary-300: #4a9eb0;  /* Derived lighter */
+  --primary-200: #7abecd;  /* Derived lighter */
+  --primary-100: #b5e0e7;  /* Derived lightest */
+  --primary-50: #e6f6f8;   /* Background tint */
 
-  /* Secondary Colors - Teal/Green Theme */
-  --secondary-900: #134e4a;  /* Dark teal */
-  --secondary-800: #155e75;  /* Medium dark teal */
-  --secondary-700: #0f766e;  /* Standard teal */
-  --secondary-600: #0891b2;  /* Light teal */
-  --secondary-500: #06b6d4;  /* Lighter teal */
-  --secondary-400: #22d3ee;  /* Very light teal */
-  --secondary-300: #67e8f9;  /* Extra light teal */
-  --secondary-200: #a7f3d0;  /* Lightest teal */
-  --secondary-100: #ccfbf1;  /* Background teal */
-  --secondary-50: #f0fdfa;   /* Lightest background teal */
+  /* Secondary Colors - keep complementary cool accents */
+  --secondary-900: #134e4a;
+  --secondary-800: #155e75;
+  --secondary-700: #0f766e;
+  --secondary-600: #0891b2;
+  --secondary-500: #06b6d4;
+  --secondary-400: #22d3ee;
+  --secondary-300: #67e8f9;
+  --secondary-200: #a7f3d0;
+  --secondary-100: #ccfbf1;
+  --secondary-50: #f0fdfa;
 
   /* Neutral Colors */
   --gray-900: #111827;  /* Darkest gray */
@@ -52,9 +53,9 @@
   /* Background Colors */
   --bg-primary: #ffffff;      /* White background */
   --bg-secondary: #f8fafc;    /* Light gray background */
-  --bg-tertiary: #f1f5f9;     /* Very light blue-gray background */
-  --bg-sidebar: var(--primary-900);  /* Dark blue sidebar */
-  --bg-header: var(--primary-900);   /* Dark blue header */
+  --bg-tertiary: #edf6f7;     /* Very light teal-gray background */
+  --bg-sidebar: var(--primary-900);  /* Teal dark sidebar */
+  --bg-header: var(--primary-900);   /* Teal dark header */
 
   /* Text Colors */
   --text-primary: #1f2937;    /* Dark gray text */
@@ -77,8 +78,8 @@
 
 /* Global Theme Classes */
 .theme-primary {
-  background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%);
-  color: var(--text-white);
+  background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 100%) !important;
+  color: var(--text-white) !important;
 }
 
 .theme-secondary {
@@ -94,15 +95,15 @@
 }
 
 .theme-button-primary {
-  background: var(--primary-600);
-  color: var(--text-white);
-  border: 1px solid var(--primary-600);
+  background: var(--primary-600) !important;
+  color: var(--text-white) !important;
+  border: 1px solid var(--primary-600) !important;
   transition: all 0.2s ease-in-out;
 }
 
 .theme-button-primary:hover {
-  background: var(--primary-700);
-  border-color: var(--primary-700);
+  background: var(--primary-700) !important;
+  border-color: var(--primary-700) !important;
 }
 
 .theme-button-secondary {
@@ -137,8 +138,8 @@
 }
 
 .theme-input:focus {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  border-color: var(--primary-500) !important;
+  box-shadow: 0 0 0 3px rgb(11 79 95 / 0.15) !important;
   outline: none;
 }
 
