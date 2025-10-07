@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import { errorHandler } from '../middleware/errorHandler.js';
 import { generateToken } from '../utils/utils.js';
 import Mailer from '../utils/mailer.js';
-import ForgotPasswordAdmin from '../models/forgotpassword.admin.model.js';
 
 dotenv.config();
 
@@ -17,6 +16,7 @@ export const adminSignIn = async (req, res, next) => {
     }
 
     const adminUser = await userModel.findOne({ username });
+
     if (!adminUser)
       return next(errorHandler(404, 'Invalid username or password'));
 
@@ -129,34 +129,10 @@ export const adminResetPassword = async (req, res, next) => {
     const adminUser = await userModel.findOne({ username });
     if (!adminUser) return next(errorHandler(404, 'User not found'));
 
-    // Only admin/company users allowed
-    if (!adminUser.isAdmin && adminUser.userType !== 'company') {
-      return next(errorHandler(403, 'Unauthorized'));
-    }
-
-    // As a safety, verify that a recent OTP/reset record exists and was used
-    const recentRecord = await ForgotPasswordAdmin.findOne({ username }).sort({
-      createdAt: -1,
-    });
-    if (
-      !recentRecord ||
-      (!recentRecord.used && recentRecord.otpExpiry < new Date())
-    ) {
-      // not strictly required, but safer to ensure OTP flow occurred
-      // we'll still allow reset if you prefer, remove this block to disable enforcement
-      console.log('No recent valid OTP/reset record found for', username);
-    }
 
     const hashedPassword = await bcryptjs.hash(newPassword, 10);
     adminUser.password = hashedPassword;
-    adminUser.passwordChangedAt = new Date();
     await adminUser.save();
-
-    // mark any reset records as used
-    await ForgotPasswordAdmin.updateMany(
-      { username, used: false },
-      { $set: { used: true } }
-    );
 
     return res
       .status(200)

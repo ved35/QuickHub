@@ -2,16 +2,15 @@ import mongoose from 'mongoose';
 
 const serviceProviderSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
     rating: {
       type: Number,
       min: 0,
       max: 5,
       default: 0,
+    },
+    name: {
+      type: String,
+      required: true,
     },
     experience: {
       type: Number,
