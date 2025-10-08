@@ -1,41 +1,18 @@
 import mongoose from 'mongoose';
 
-const feedbackSchema = new mongoose.Schema(
+const FeedbackSchema = new mongoose.Schema(
   {
-    bookingId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Booking',
-      required: true,
-    },
-    serviceSeekerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    serviceProviderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'ServiceProvider',
-      required: true,
-    },
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5,
-      required: true,
-    },
-    comment: {
-      type: String,
-    },
-    isSubmitted: {
-      type: Boolean,
-      default: false,
-    },
+    providerId: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceProvider', required: true, index: true },
+    bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },
+    authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    authorName: { type: String },
+    rating: { type: Number, min: 1, max: 5, required: true },
+    comment: { type: String },
+    meta: { type: mongoose.Schema.Types.Mixed },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-const feedbackModel = mongoose.model('Feedback', feedbackSchema);
+FeedbackSchema.index({ providerId: 1, createdAt: -1 });
 
-export default feedbackModel;
+export default mongoose.models.Feedback || mongoose.model('Feedback', FeedbackSchema);

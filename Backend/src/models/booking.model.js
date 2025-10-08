@@ -6,49 +6,41 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
     serviceSeekerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true,
     },
     serviceProviderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ServiceProvider',
-      required: true,
+      required: false, // allow unassigned bookings
+      index: true,
     },
     serviceId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Service',
       required: true,
+      index: true,
     },
-    scheduledDate: {
-      type: Date,
-      required: true,
-    },
-    completedDate: {
-      type: Date,
-    },
-    duration: {
-      type: Number,
-      required: true,
-    },
-    amount: {
-      type: Number,
-      required: true,
-    },
-    cgst: {
-      type: Number,
-      required: true,
-    },
-    sgst: {
-      type: Number,
-      required: true,
-    },
-    total: {
-      type: Number,
-      required: true,
-    },
+
+    // explicit scheduling fields
+    startDateTime: { type: Date, required: true, index: true },
+    endDateTime: { type: Date },
+
+    // legacy/backwards compatibility
+    scheduledDate: { type: Date },
+    duration: { type: Number, min: 0 },
+
+    // pricing (defaults, computed elsewhere)
+    amount: { type: Number, default: 0 },
+    cgst: { type: Number, default: 0 },
+    sgst: { type: Number, default: 0 },
+    total: { type: Number, default: 0 },
+
     status: {
       type: String,
       enum: [
@@ -62,15 +54,19 @@ const bookingSchema = new mongoose.Schema(
         'paid',
       ],
       default: 'requested',
+      index: true,
     },
+
     isCompanyBooking: {
       type: Boolean,
       default: false,
     },
+
     companyResponse: {
       status: {
         type: String,
         enum: ['pending', 'accepted', 'rejected'],
+        default: 'pending',
       },
       respondedAt: {
         type: Date,
@@ -80,18 +76,47 @@ const bookingSchema = new mongoose.Schema(
         ref: 'ServiceProvider',
       },
     },
-    notes: {
-      type: String,
+
+    // UI/display fields
+    role: { type: String }, // e.g. "Caretaker"
+    notes: { type: String },
+    specialRequirements: { type: String },
+
+    // Location & geo
+    location: {
+      address: { type: String },
+      city: { type: String },
+      state: { type: String },
+      pincode: { type: String },
+      coordinates: {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
+      },
     },
-    specialRequirements: {
-      type: String,
-    },
+
+    // history for audit
+    history: [
+      {
+        status: String,
+        by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        at: { type: Date, default: Date.now },
+        note: String,
+      },
+    ],
+
+    meta: { type: mongoose.Schema.Types.Mixed },
   },
   {
     timestamps: true,
   }
 );
 
-const bookingModel = mongoose.model('Booking', bookingSchema);
+// Useful indexes
+bookingSchema.index({ serviceSeekerId: 1, startDateTime: -1 });
+bookingSchema.index({ serviceProviderId: 1, status: 1, startDateTime: -1 });
+bookingSchema.index({ referenceNo: 1 }, { unique: true });
+bookingSchema.index({ 'location.coordinates': '2dsphere' });
+
+const bookingModel = mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
 
 export default bookingModel;
