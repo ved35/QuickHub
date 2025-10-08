@@ -58,9 +58,9 @@ const Sidebar = () => {
       ))}
     </nav>
    
-    <div className="p-4 text-xs text-white text-center fixed bottom-0">
+    {/* <div className="p-4 text-xs text-white text-center fixed bottom-0">
       copyright 2025. All rights reserved.
-    </div>
+    </div> */}
     </aside>
   </>
   );

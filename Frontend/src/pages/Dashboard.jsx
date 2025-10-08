@@ -12,8 +12,12 @@ const Dashboard = () => {
         <main className="flex-1 p-2 sm:p-8 overflow-y-auto no-scrollbar w-full" style={{backgroundColor: 'var(--bg-secondary)'}}>
           <div className="mx-auto w-full">
             <Outlet />
+            
           </div>
         </main>
+            <div className="pb-4  text-xs w-full text-white text-center bottom-0 " style={{color: 'var(--text-secondary)'}}>
+              copyright 2025. All rights reserved.
+            </div>
       </div>
     </div>
   );
