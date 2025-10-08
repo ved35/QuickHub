@@ -71,12 +71,10 @@ const CustomerList = ({ customers, onEdit, onDelete }) => {
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 ${
-                currentPage === page ? 'text-white' : ''
-              }`}
+              className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 text-black-important`}
               style={{
                 backgroundColor: currentPage === page ? 'var(--primary-600)' : 'var(--bg-primary)',
-                color: currentPage === page ? 'white' : 'var(--text-primary)',
+                color: 'black',
                 border: '1px solid var(--border-light)'
               }}
             >
@@ -181,11 +179,11 @@ const CustomerList = ({ customers, onEdit, onDelete }) => {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        className="px-4 py-2 text-sm font-medium rounded transition-colors duration-200"
+                        className="px-4 py-2 text-sm font-medium rounded transition-colors duration-200 text-black-important"
                         style={{
-                          backgroundColor: customer.status === 'Active' ? 'var(--secondary-800)' : 'var(--secondary-800)',
-                          color: 'white',
-                          border: '1px solid var(--secondary-700)'
+                          backgroundColor: customer.status === 'Active' ? 'var(--success-600)' : 'var(--gray-600)',
+                          color: 'black',
+                          border: '1px solid var(--border-light)'
                         }}
                       >
                         {customer.status}
@@ -235,12 +233,10 @@ const CustomerList = ({ customers, onEdit, onDelete }) => {
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 ${
-                currentPage === page ? 'text-white' : ''
-              }`}
+              className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 text-black-important`}
               style={{
                 backgroundColor: currentPage === page ? 'var(--primary-600)' : 'var(--bg-primary)',
-                color: currentPage === page ? 'white' : 'var(--text-primary)',
+                color: 'black',
                 border: '1px solid var(--border-light)'
               }}
             >

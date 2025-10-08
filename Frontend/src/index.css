@@ -16,6 +16,13 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Force black text for pagination numerals/buttons */
+.text-black-important { color: #000000 !important; }
+.bg-transparent-important { background-color: transparent !important; }
+
+/* Ensure white text on strong colored status buttons */
+.text-white-important { color: #ffffff !important; }
+
 a,
 html,
 body,

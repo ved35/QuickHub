@@ -67,12 +67,11 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 ${
-                currentPage === page ? 'text-white' : ''
+                className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 text-black-important
               }`}
               style={{
                 backgroundColor: currentPage === page ? 'var(--primary-600)' : 'var(--bg-primary)',
-                color: currentPage === page ? 'white' : 'var(--text-primary)',
+                color: 'black',
                 border: '1px solid var(--border-light)'
               }}
             >
@@ -224,12 +223,11 @@ const TransactionList = ({ transactions, onEdit, onDelete }) => {
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 ${
-                currentPage === page ? 'text-white' : ''
-              }`}
+                className={`px-3 py-1 text-sm font-medium rounded transition-colors duration-200 text-black-important
+            `}
               style={{
                 backgroundColor: currentPage === page ? 'var(--primary-600)' : 'var(--bg-primary)',
-                color: currentPage === page ? 'white' : 'var(--text-primary)',
+                color: 'black',
                 border: '1px solid var(--border-light)'
               }}
             >
