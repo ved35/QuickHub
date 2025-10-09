@@ -43,6 +43,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
+// app.use('/api/staff', staffRouter); Pending
 
 app.use((error, req, res, next) => {
   const statusCode = error.statusCode || 500;

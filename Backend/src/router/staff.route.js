@@ -9,6 +9,7 @@ import {
 const router = express.Router();
 
 router.get('/list-staff', verifyToken, listStaff);
+// router.get('/customer/list-staff', verifyToken, listStaffCustomer); Pending
 
 router.post('/create-staff', verifyToken, createStaff);
 
