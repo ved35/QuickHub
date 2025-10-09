@@ -68,7 +68,7 @@ export const signUp = async (req, res, next) => {
       status: 'success',
       message: 'Sign up successful',
       data: rest,
-      token
+      token,
     });
   } catch (error) {
     console.log('Error in signup controller', error.message);
@@ -104,7 +104,7 @@ export const signIn = async (req, res, next) => {
       status: 'success',
       message: 'Login Successfull',
       data: rest,
-      token
+      token,
     });
   } catch (error) {
     console.log('Sign in error :-', error);
@@ -148,14 +148,15 @@ export const forgotPassword = async (req, res, next) => {
       user.otp = null;
       user.otpExpiry = null;
       await user.save();
-      return next(errorHandler(500, `Failed to send OTP email: ${emailError.message}`));
+      return next(
+        errorHandler(500, `Failed to send OTP email: ${emailError.message}`)
+      );
     }
   } catch (error) {
     console.log('Forgot password error :-', error);
     return next(errorHandler(500, 'Internal Server Error'));
   }
 };
-
 
 export const validateOtp = async (req, res, next) => {
   try {
@@ -225,7 +226,9 @@ export const editProfile = async (req, res, next) => {
       (phone === undefined || phone === null) &&
       (email === undefined || email === null)
     ) {
-      return next(errorHandler(400, 'At least one field is required to update'));
+      return next(
+        errorHandler(400, 'At least one field is required to update')
+      );
     }
 
     const user = await userModel.findById(userId);
@@ -266,11 +269,16 @@ export const changePassword = async (req, res, next) => {
   try {
     // use authenticated user's email (set by auth middleware)
     const username = req.user?.id;
-    console.log('Authenticated username :-', req.user,  req.body);
+    console.log('Authenticated username :-', req.user, req.body);
     if (!username) return next(errorHandler(401, 'Unauthorized'));
 
     const { oldPassword, newPassword } = req.body;
-    if (!oldPassword || !newPassword || oldPassword === '' || newPassword === '') {
+    if (
+      !oldPassword ||
+      !newPassword ||
+      oldPassword === '' ||
+      newPassword === ''
+    ) {
       return next(errorHandler(400, 'All fields are required'));
     }
 
@@ -278,10 +286,17 @@ export const changePassword = async (req, res, next) => {
     if (!user) return next(errorHandler(404, 'User not found'));
 
     const validPassword = bcryptjs.compareSync(oldPassword, user.password);
-    if (!validPassword) return next(errorHandler(400, 'Current password is incorrect'));
+    if (!validPassword)
+      return next(errorHandler(400, 'Current password is incorrect'));
 
     const sameAsOld = bcryptjs.compareSync(newPassword, user.password);
-    if (sameAsOld) return next(errorHandler(400, 'New password must be different from current password'));
+    if (sameAsOld)
+      return next(
+        errorHandler(
+          400,
+          'New password must be different from current password'
+        )
+      );
 
     user.password = await bcryptjs.hash(newPassword, 10);
     user.passwordChangedAt = Date.now();
@@ -289,7 +304,7 @@ export const changePassword = async (req, res, next) => {
 
     return res.status(200).json({
       status: 'success',
-      message: 'Password changed successfully'
+      message: 'Password changed successfully',
     });
   } catch (error) {
     console.log('Change password error :-', error);
@@ -301,27 +316,41 @@ export const changePassword = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    const token = req.headers.authorization || req.cookies.jwt || req.headers.cookie;
-    console.log('Logout request by user :-', token);           
+    const token =
+      req.headers.authorization || req.cookies.jwt || req.headers.cookie;
+    console.log('Logout request by user :-', token);
     if (!token) {
       return next(errorHandler(400, 'Authorization token missing'));
     }
-    
-    const decoded = jwt.decode(token) || {};
-    console.log('Logout decoded by user :-', decoded);           
-    const expiresAt = decoded.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const userId = req.user?.id || req.user?._id || decoded.sub || decoded.id || decoded.userId;
 
+    const decoded = jwt.decode(token) || {};
+    console.log('Logout decoded by user :-', decoded);
+    const expiresAt = decoded.exp
+      ? new Date(decoded.exp * 1000)
+      : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const userId =
+      req.user?.id ||
+      req.user?._id ||
+      decoded.sub ||
+      decoded.id ||
+      decoded.userId;
 
     try {
-      await TokenBlacklist.create({ token, userId, expiresAt, meta: { ip: req.ip } });
+      await TokenBlacklist.create({
+        token,
+        userId,
+        expiresAt,
+        meta: { ip: req.ip },
+      });
     } catch (err) {
       if (err.code && err.code !== 11000) {
         console.error('Token blacklist save error', err);
       }
     }
 
-    return res.status(200).json({ status: 'success', message: 'Logged out successfully' });
+    return res
+      .status(200)
+      .json({ status: 'success', message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error :-', error);
     return next(errorHandler(500, 'Internal Server Error'));

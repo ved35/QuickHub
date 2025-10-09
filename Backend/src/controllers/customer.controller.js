@@ -10,7 +10,8 @@ import errorHandler from '../middleware/errorHandler.js';
 // GET /customer/services
 export const listServices = async (req, res, next) => {
   try {
-    const services = await serviceModel.find({ isActive: true })
+    const services = await serviceModel
+      .find({ isActive: true })
       .select('name description basePrice category')
       .sort({ name: 1 })
       .lean();
@@ -37,24 +38,34 @@ export const listBookings = async (req, res, next) => {
     const filter = { serviceSeekerId: userId };
 
     if (services) {
-      const svcArray = services.split(',').map((s) => s.trim()).filter(Boolean);
+      const svcArray = services
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (svcArray.length) filter.serviceId = { $in: svcArray };
     }
 
     if (status) {
-      const statusArray = status.split(',').map((s) => s.trim()).filter(Boolean);
+      const statusArray = status
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (statusArray.length) filter.status = { $in: statusArray };
     } else {
       // active bookings default statuses if you want only active ones
-      filter.status = { $in: ['requested', 'confirmed', 'in_progress', 'pending'] };
+      filter.status = {
+        $in: ['requested', 'confirmed', 'in_progress', 'pending'],
+      };
     }
 
-    const sortField = (sort === 'date_desc') ? -1 : 1;
+    const sortField = sort === 'date_desc' ? -1 : 1;
     // prefer startDateTime, fallback to scheduledDate
     const sortBy = { startDateTime: sortField, scheduledDate: sortField };
 
-    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
-    const docs = await bookingModel.find(filter)
+    const skip =
+      (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
+    const docs = await bookingModel
+      .find(filter)
       .sort(sortBy)
       .skip(skip)
       .limit(Math.max(1, parseInt(limit, 10)))
@@ -78,25 +89,38 @@ export const listBookings = async (req, res, next) => {
             avatar: b.serviceProviderId.userId.profilePicture,
             specializations: b.serviceProviderId.specializations || [],
             employmentType: b.serviceProviderId.employmentType,
-            rate: b.serviceProviderId.hourlyRate || b.serviceProviderId.dailyRate || null,
+            rate:
+              b.serviceProviderId.hourlyRate ||
+              b.serviceProviderId.dailyRate ||
+              null,
           }
         : null,
       startDateTime: b.startDateTime || b.scheduledDate || null,
       endDateTime: b.endDateTime || null,
-      timeRange: b.startTime && b.endTime ? `${b.startTime} - ${b.endTime}` : undefined,
+      timeRange:
+        b.startTime && b.endTime ? `${b.startTime} - ${b.endTime}` : undefined,
       role: b.role || b.serviceId?.name || '',
-      feeText: b.amount ? `₹ ${b.amount}` : (b.serviceProviderId?.hourlyRate ? `₹ ${b.serviceProviderId.hourlyRate}/hr` : ''),
+      feeText: b.amount
+        ? `₹ ${b.amount}`
+        : b.serviceProviderId?.hourlyRate
+          ? `₹ ${b.serviceProviderId.hourlyRate}/hr`
+          : '',
       status: b.status,
       location: b.location || null,
     }));
 
-    return res.status(200).json({ status: 'success', meta: { page: Number(page), limit: Number(limit) }, data });
+    return res
+      .status(200)
+      .json({
+        status: 'success',
+        meta: { page: Number(page), limit: Number(limit) },
+        data,
+      });
   } catch (err) {
     console.error('listBookings error', err);
     return next(errorHandler(500, 'Failed to fetch bookings'));
   }
 };
-
 
 // GET /customer/providers/:id
 export const staffBookingDetails = async (req, res, next) => {
@@ -105,7 +129,10 @@ export const staffBookingDetails = async (req, res, next) => {
     if (!id) return next(errorHandler(400, 'Provider id required'));
 
     const provider = await ServiceProvider.findById(id)
-      .populate({ path: 'userId', select: 'name profilePicture phone gender dob' })
+      .populate({
+        path: 'userId',
+        select: 'name profilePicture phone gender dob',
+      })
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
@@ -137,7 +164,6 @@ export const staffBookingDetails = async (req, res, next) => {
     return next(errorHandler(500, 'Failed to fetch provider details'));
   }
 };
-
 
 // GET /customer/providers/:id/feedbacks
 export const staffFeedbacks = async (req, res, next) => {
@@ -176,7 +202,6 @@ export const staffFeedbacks = async (req, res, next) => {
     return next(errorHandler(500, 'Failed to fetch feedbacks'));
   }
 };
-
 
 // GET /companies/:id
 export const companyDetails = async (req, res, next) => {

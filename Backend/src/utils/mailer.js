@@ -29,13 +29,19 @@ const transporter = nodemailer.createTransport({
 const Mailer = async ({ name, otp, email }) => {
   // Validate required environment variables
   if (!NODEMAILER_USER || !NODEMAILER_PASS) {
-    console.error('Missing email configuration: NODEMAILER_USER or NODEMAILER_PASS not set');
+    console.error(
+      'Missing email configuration: NODEMAILER_USER or NODEMAILER_PASS not set'
+    );
     throw new Error('Email service not configured properly');
   }
 
   // Validate input parameters
   if (!email || !otp || !name) {
-    console.error('Missing required parameters for email:', { name, otp: !!otp, email });
+    console.error('Missing required parameters for email:', {
+      name,
+      otp: !!otp,
+      email,
+    });
     throw new Error('Missing required email parameters');
   }
 
@@ -52,12 +58,14 @@ const Mailer = async ({ name, otp, email }) => {
     return info;
   } catch (error) {
     console.error('Error sending mail:', error.message);
-    
+
     // Provide more specific error messages
     if (error.code === 'EAUTH') {
       throw new Error('Email authentication failed. Check your credentials.');
     } else if (error.code === 'ECONNECTION') {
-      throw new Error('Failed to connect to email server. Check your internet connection.');
+      throw new Error(
+        'Failed to connect to email server. Check your internet connection.'
+      );
     } else {
       throw new Error(`Email sending failed: ${error.message}`);
     }

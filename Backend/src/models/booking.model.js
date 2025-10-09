@@ -117,6 +117,7 @@ bookingSchema.index({ serviceProviderId: 1, status: 1, startDateTime: -1 });
 bookingSchema.index({ referenceNo: 1 }, { unique: true });
 bookingSchema.index({ 'location.coordinates': '2dsphere' });
 
-const bookingModel = mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
+const bookingModel =
+  mongoose.models.Booking || mongoose.model('Booking', bookingSchema);
 
 export default bookingModel;

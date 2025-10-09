@@ -32,14 +32,12 @@ export const adminSignIn = async (req, res, next) => {
     const token = generateToken(adminUser._id, adminUser.isAdmin, res);
     const { password: pass, ...rest } = adminUser._doc;
 
-    return res
-      .status(200)
-      .json({
-        status: 'success',
-        message: 'Admin login successful',
-        data: rest,
-        token,
-      });
+    return res.status(200).json({
+      status: 'success',
+      message: 'Admin login successful',
+      data: rest,
+      token,
+    });
   } catch (error) {
     console.log('Admin signIn error :-', error);
     return next(errorHandler(500, 'Internal Server Error'));
@@ -68,15 +66,17 @@ export const adminForgotPassword = async (req, res, next) => {
     await adminUser.save();
 
     try {
-      let info = await Mailer({ name: adminUser.name, otp, email: adminUser.email });
+      let info = await Mailer({
+        name: adminUser.name,
+        otp,
+        email: adminUser.email,
+      });
       console.log('Email sent successfully :-', info?.messageId);
-      return res
-        .status(200)
-        .json({ 
-          status: 'success', 
-          message: 'OTP sent to admin email', 
-          data: { username: adminUser.username, email: adminUser.email } 
-        });
+      return res.status(200).json({
+        status: 'success',
+        message: 'OTP sent to admin email',
+        data: { username: adminUser.username, email: adminUser.email },
+      });
     } catch (emailError) {
       console.error('Email sending failed:', emailError.message);
       adminUser.otp = null;
@@ -102,7 +102,7 @@ export const adminValidateOtp = async (req, res, next) => {
 
     const adminUser = await userModel.findOne({ username });
     if (!adminUser) return next(errorHandler(404, 'User not found'));
-   
+
     if (adminUser.otp !== otp || adminUser.otpExpiry < new Date()) {
       return next(errorHandler(400, 'Invalid or expired OTP'));
     }
@@ -129,7 +129,6 @@ export const adminResetPassword = async (req, res, next) => {
     const adminUser = await userModel.findOne({ username });
     if (!adminUser) return next(errorHandler(404, 'User not found'));
 
-
     const hashedPassword = await bcryptjs.hash(newPassword, 10);
     adminUser.password = hashedPassword;
     await adminUser.save();
@@ -146,11 +145,16 @@ export const adminResetPassword = async (req, res, next) => {
 export const adminchangePassword = async (req, res, next) => {
   try {
     const username = req.user?.id;
-    console.log('Authenticated username :-', req.user,  req.body);
+    console.log('Authenticated username :-', req.user, req.body);
     if (!username) return next(errorHandler(401, 'Unauthorized'));
 
     const { oldPassword, newPassword } = req.body;
-    if (!oldPassword || !newPassword || oldPassword === '' || newPassword === '') {
+    if (
+      !oldPassword ||
+      !newPassword ||
+      oldPassword === '' ||
+      newPassword === ''
+    ) {
       return next(errorHandler(400, 'All fields are required'));
     }
 
@@ -158,10 +162,17 @@ export const adminchangePassword = async (req, res, next) => {
     if (!user) return next(errorHandler(404, 'User not found'));
 
     const validPassword = bcryptjs.compareSync(oldPassword, user.password);
-    if (!validPassword) return next(errorHandler(400, 'Current password is incorrect'));
+    if (!validPassword)
+      return next(errorHandler(400, 'Current password is incorrect'));
 
     const sameAsOld = bcryptjs.compareSync(newPassword, user.password);
-    if (sameAsOld) return next(errorHandler(400, 'New password must be different from current password'));
+    if (sameAsOld)
+      return next(
+        errorHandler(
+          400,
+          'New password must be different from current password'
+        )
+      );
 
     user.password = await bcryptjs.hash(newPassword, 10);
     user.passwordChangedAt = Date.now();
@@ -169,7 +180,7 @@ export const adminchangePassword = async (req, res, next) => {
 
     return res.status(200).json({
       status: 'success',
-      message: 'Password changed successfully'
+      message: 'Password changed successfully',
     });
   } catch (error) {
     console.log('Change password error :-', error);

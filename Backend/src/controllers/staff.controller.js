@@ -1,7 +1,6 @@
 import staffModel from '../models/staff.model.js';
 import userModel from '../models/user.model.js';
 
-
 export const listStaff = async (req, res, next) => {
   try {
     const {
@@ -37,7 +36,13 @@ export const listStaff = async (req, res, next) => {
     const match = {};
 
     if (type) match.employmentType = type;
-    if (services) match.specializations = { $in: services.split(',').map((s) => s.trim()).filter(Boolean) };
+    if (services)
+      match.specializations = {
+        $in: services
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
     if (minExp || maxExp) {
       match.experienceYears = {};
       if (minExp) match.experienceYears.$gte = Number(minExp);
@@ -67,7 +72,7 @@ export const listStaff = async (req, res, next) => {
     // Count total (use a copy of pipeline)
     const countPipeline = pipeline.concat([{ $count: 'total' }]);
     const countRes = await staffModel.aggregate(countPipeline);
-    const total = (countRes[0] && countRes[0].total) ? countRes[0].total : 0;
+    const total = countRes[0] && countRes[0].total ? countRes[0].total : 0;
 
     // Sorting - default: createdAt desc (table desc order)
     let sortObj = { createdAt: -1 };
@@ -129,7 +134,8 @@ export const createStaff = async (req, res, next) => {
   try {
     // expected body: user (name,email,phone,gender,dob,address,password optional) and provider fields
     const { user, provider } = req.body;
-    if (!user || !user.email || !provider) return next(errorHandler(400, 'Missing required fields'));
+    if (!user || !user.email || !provider)
+      return next(errorHandler(400, 'Missing required fields'));
 
     // create or reuse user
     let existing = await userModel.findOne({ email: user.email });
@@ -139,7 +145,9 @@ export const createStaff = async (req, res, next) => {
       existing.phone = user.phone || existing.phone;
       await existing.save();
     } else {
-      const password = user.password ? await bcryptjs.hash(user.password, 10) : undefined;
+      const password = user.password
+        ? await bcryptjs.hash(user.password, 10)
+        : undefined;
       existing = await userModel.create({
         name: user.name,
         email: user.email,
@@ -175,25 +183,34 @@ export const createStaff = async (req, res, next) => {
 export const updateStaff = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return next(errorHandler(400, 'Invalid staff id'));
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return next(errorHandler(400, 'Invalid staff id'));
 
     // Combined payload shape:
     // { user: {...}, provider: {...}, availability: {...}, slotsToAdd: [...], slotsToRemove: [...] }
-    const { user, provider, availability, slotsToAdd, slotsToRemove } = req.body;
+    const { user, provider, availability, slotsToAdd, slotsToRemove } =
+      req.body;
 
     const sp = await staffModel.findById(id);
     if (!sp) return next(errorHandler(404, 'Staff not found'));
 
     // Provider updates (manage staff fields)
     if (provider) {
-      if (provider.hourlyRate !== undefined) sp.hourlyRate = provider.hourlyRate;
+      if (provider.hourlyRate !== undefined)
+        sp.hourlyRate = provider.hourlyRate;
       if (provider.dailyRate !== undefined) sp.dailyRate = provider.dailyRate;
       if (provider.employmentType) sp.employmentType = provider.employmentType;
-      if (provider.specializations) sp.specializations = provider.specializations;
+      if (provider.specializations)
+        sp.specializations = provider.specializations;
       if (provider.bio) sp.bio = provider.bio;
-      if (provider.experienceYears !== undefined) sp.experienceYears = provider.experienceYears;
+      if (provider.experienceYears !== undefined)
+        sp.experienceYears = provider.experienceYears;
       if (provider.isActive !== undefined) sp.isActive = provider.isActive;
-      if (provider.companyId && mongoose.Types.ObjectId.isValid(provider.companyId)) sp.companyId = provider.companyId;
+      if (
+        provider.companyId &&
+        mongoose.Types.ObjectId.isValid(provider.companyId)
+      )
+        sp.companyId = provider.companyId;
       if (provider.location) sp.location = provider.location;
       if (provider.documents) sp.documents = provider.documents;
     }
@@ -212,8 +229,14 @@ export const updateStaff = async (req, res, next) => {
       }
     }
     // Remove slots if provided (slotsToRemove is array of slot _id strings)
-    if (Array.isArray(slotsToRemove) && slotsToRemove.length && Array.isArray(sp.availability?.slots)) {
-      sp.availability.slots = sp.availability.slots.filter(s => !slotsToRemove.includes(String(s._id)));
+    if (
+      Array.isArray(slotsToRemove) &&
+      slotsToRemove.length &&
+      Array.isArray(sp.availability?.slots)
+    ) {
+      sp.availability.slots = sp.availability.slots.filter(
+        (s) => !slotsToRemove.includes(String(s._id))
+      );
     }
 
     await sp.save();
@@ -241,24 +264,29 @@ export const updateStaff = async (req, res, next) => {
     }
 
     // Return fresh populated document
-    const updated = await staffModel.findById(id)
-      .populate({ path: 'userId', select: 'name email phone profilePicture gender dob address' })
+    const updated = await staffModel
+      .findById(id)
+      .populate({
+        path: 'userId',
+        select: 'name email phone profilePicture gender dob address',
+      })
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
-    return res.status(200).json({ status: 'success', message: 'Staff updated', data: updated });
+    return res
+      .status(200)
+      .json({ status: 'success', message: 'Staff updated', data: updated });
   } catch (err) {
     console.error('updateStaff error', err);
     return next(errorHandler(500, 'Failed to update staff'));
   }
 };
 
-
-
 // GET /customer/services
 export const listServices = async (req, res, next) => {
   try {
-    const services = await serviceModel.find({ isActive: true })
+    const services = await serviceModel
+      .find({ isActive: true })
       .select('name description basePrice category')
       .sort({ name: 1 })
       .lean();
@@ -285,24 +313,34 @@ export const listBookings = async (req, res, next) => {
     const filter = { serviceSeekerId: userId };
 
     if (services) {
-      const svcArray = services.split(',').map((s) => s.trim()).filter(Boolean);
+      const svcArray = services
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (svcArray.length) filter.serviceId = { $in: svcArray };
     }
 
     if (status) {
-      const statusArray = status.split(',').map((s) => s.trim()).filter(Boolean);
+      const statusArray = status
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (statusArray.length) filter.status = { $in: statusArray };
     } else {
       // active bookings default statuses if you want only active ones
-      filter.status = { $in: ['requested', 'confirmed', 'in_progress', 'pending'] };
+      filter.status = {
+        $in: ['requested', 'confirmed', 'in_progress', 'pending'],
+      };
     }
 
-    const sortField = (sort === 'date_desc') ? -1 : 1;
+    const sortField = sort === 'date_desc' ? -1 : 1;
     // prefer startDateTime, fallback to scheduledDate
     const sortBy = { startDateTime: sortField, scheduledDate: sortField };
 
-    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
-    const docs = await bookingModel.find(filter)
+    const skip =
+      (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
+    const docs = await bookingModel
+      .find(filter)
       .sort(sortBy)
       .skip(skip)
       .limit(Math.max(1, parseInt(limit, 10)))
@@ -326,25 +364,38 @@ export const listBookings = async (req, res, next) => {
             avatar: b.serviceProviderId.userId.profilePicture,
             specializations: b.serviceProviderId.specializations || [],
             employmentType: b.serviceProviderId.employmentType,
-            rate: b.serviceProviderId.hourlyRate || b.serviceProviderId.dailyRate || null,
+            rate:
+              b.serviceProviderId.hourlyRate ||
+              b.serviceProviderId.dailyRate ||
+              null,
           }
         : null,
       startDateTime: b.startDateTime || b.scheduledDate || null,
       endDateTime: b.endDateTime || null,
-      timeRange: b.startTime && b.endTime ? `${b.startTime} - ${b.endTime}` : undefined,
+      timeRange:
+        b.startTime && b.endTime ? `${b.startTime} - ${b.endTime}` : undefined,
       role: b.role || b.serviceId?.name || '',
-      feeText: b.amount ? `₹ ${b.amount}` : (b.serviceProviderId?.hourlyRate ? `₹ ${b.serviceProviderId.hourlyRate}/hr` : ''),
+      feeText: b.amount
+        ? `₹ ${b.amount}`
+        : b.serviceProviderId?.hourlyRate
+          ? `₹ ${b.serviceProviderId.hourlyRate}/hr`
+          : '',
       status: b.status,
       location: b.location || null,
     }));
 
-    return res.status(200).json({ status: 'success', meta: { page: Number(page), limit: Number(limit) }, data });
+    return res
+      .status(200)
+      .json({
+        status: 'success',
+        meta: { page: Number(page), limit: Number(limit) },
+        data,
+      });
   } catch (err) {
     console.error('listBookings error', err);
     return next(errorHandler(500, 'Failed to fetch bookings'));
   }
 };
-
 
 // GET /customer/providers/:id
 export const staffBookingDetails = async (req, res, next) => {
@@ -353,7 +404,10 @@ export const staffBookingDetails = async (req, res, next) => {
     if (!id) return next(errorHandler(400, 'Provider id required'));
 
     const provider = await ServiceProvider.findById(id)
-      .populate({ path: 'userId', select: 'name profilePicture phone gender dob' })
+      .populate({
+        path: 'userId',
+        select: 'name profilePicture phone gender dob',
+      })
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
@@ -385,7 +439,6 @@ export const staffBookingDetails = async (req, res, next) => {
     return next(errorHandler(500, 'Failed to fetch provider details'));
   }
 };
-
 
 // GET /customer/providers/:id/feedbacks
 export const staffFeedbacks = async (req, res, next) => {
@@ -424,7 +477,6 @@ export const staffFeedbacks = async (req, res, next) => {
     return next(errorHandler(500, 'Failed to fetch feedbacks'));
   }
 };
-
 
 // GET /companies/:id
 export const companyDetails = async (req, res, next) => {
