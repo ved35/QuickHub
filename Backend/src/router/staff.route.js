@@ -4,25 +4,19 @@ import {
   listStaff,
   createStaff,
   updateStaff,
+  staffDetailsForCustomer,
 } from '../controllers/staff.controller.js';
 
 const router = express.Router();
 
 router.get('/list-staff', verifyToken, listStaff);
-// router.get('/customer/list-staff', verifyToken, listStaffCustomer); Pending
+ router.get('/customer/list-staff', verifyToken, listStaffCustomer); 
 
 router.post('/create-staff', verifyToken, createStaff);
 
 router.post('/update-staff/:id', verifyToken, updateStaff);
 
-// Services (protected — remove verifyToken if you want public)
-router.get('/services', verifyToken, listServices);
+router.get('/customer/staff-details',verifyToken,staffDetailsForCustomer)
 
-// Customer bookings (active/past) with filters & pagination
-router.get('/bookings', verifyToken, listBookings);
-// router.get('/bookings/:id', verifyToken, listBookings); // if booking detail is handled by listBookings, otherwise adjust
-
-// Provider & company details used by UI (use controller names)
-router.get('/providers/:id', verifyToken, staffBookingDetails);
-router.get('/providers/:id/feedbacks', verifyToken, staffFeedbacks);
-router.get('/companies/:id', verifyToken, companyDetails);
+// company detail (used by Staff Details UI)
+router.get('/customer/company-detail/:id', verifyToken, companyDetails); // GET /staff/company/:id

@@ -1,6 +1,9 @@
-import staffModel from '../models/staff.model.js';
-import userModel from '../models/user.model.js';
+import mongoose from 'mongoose';
+import Staff from '../models/staff.model.js';
+import errorHandler from '../middleware/errorHandler.js';
+import bcryptjs from 'bcryptjs';
 
+// List staff
 export const listStaff = async (req, res, next) => {
   try {
     const {
@@ -105,16 +108,17 @@ export const listStaff = async (req, res, next) => {
 
     const items = await staffModel.aggregate(pipeline);
 
+    // when listing, fall back to embedded fields if user not linked
     const data = items.map((p) => ({
       id: p._id,
-      name: p.user?.name || '',
-      avatar: p.user?.profilePicture || null,
+      name: (p.user && p.user.name) || p.name || '',
+      avatar: (p.user && p.user.profilePicture) || p.profilePicture || null,
       employmentType: p.employmentType,
       hourlyRate: p.hourlyRate,
       specializations: p.specializations || [],
       experienceYears: p.experienceYears || 0,
       rating: p.rating || 0,
-      phone: p.user?.phone || null,
+      phone: (p.user && p.user.phone) || p.phone || null,
       isActive: p.isActive === undefined ? true : p.isActive,
     }));
 
@@ -129,48 +133,57 @@ export const listStaff = async (req, res, next) => {
   }
 };
 
-// Create staff (manage staff UI)
+// CREATE staff - supports company-created staff (no user) or linked user
 export const createStaff = async (req, res, next) => {
   try {
-    // expected body: user (name,email,phone,gender,dob,address,password optional) and provider fields
     const { user, provider } = req.body;
-    if (!user || !user.email || !provider)
-      return next(errorHandler(400, 'Missing required fields'));
 
-    // create or reuse user
-    let existing = await userModel.findOne({ email: user.email });
-    if (existing) {
-      // update minimal fields
-      existing.name = user.name || existing.name;
-      existing.phone = user.phone || existing.phone;
-      await existing.save();
-    } else {
-      const password = user.password
-        ? await bcryptjs.hash(user.password, 10)
-        : undefined;
-      existing = await userModel.create({
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        gender: user.gender,
-        dob: user.dob,
-        username: user.username || user.email,
-        password,
-      });
+    // if frontend provides user object with email -> create/link real User
+    let linkedUserId = null;
+    if (user && user.email) {
+      let existing = await userModel.findOne({ email: user.email });
+      if (existing) {
+        // update minimal profile on existing user
+        existing.name = user.name || existing.name;
+        existing.phone = user.phone || existing.phone;
+        await existing.save();
+        linkedUserId = existing._id;
+      } else {
+        const passwordHash = user.password
+          ? await bcryptjs.hash(user.password, 10)
+          : undefined;
+        const createdUser = await userModel.create({
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          gender: user.gender,
+          dob: user.dob,
+          username: user.username || user.email,
+          password: passwordHash,
+        });
+        linkedUserId = createdUser._id;
+      }
     }
 
-    const sp = await staffModel.create({
-      userId: existing._id,
-      companyId: provider.companyId,
-      hourlyRate: provider.hourlyRate,
-      dailyRate: provider.dailyRate,
-      employmentType: provider.employmentType,
-      specializations: provider.specializations || [],
-      bio: provider.bio,
-      experienceYears: provider.experienceYears || 0,
-      availability: provider.availability || {},
-      isActive: provider.isActive !== false,
-    });
+    // Build staff doc
+    const staffDoc = {
+      userId: linkedUserId || undefined,
+      name: linkedUserId ? undefined : (user?.name || provider?.name),
+      email: linkedUserId ? undefined : (user?.email || provider?.email),
+      phone: linkedUserId ? undefined : (user?.phone || provider?.phone),
+      profilePicture: provider?.profilePicture,
+      companyId: provider?.companyId,
+      hourlyRate: provider?.hourlyRate,
+      dailyRate: provider?.dailyRate,
+      employmentType: provider?.employmentType,
+      specializations: provider?.specializations || [],
+      bio: provider?.bio,
+      experienceYears: provider?.experienceYears || 0,
+      availability: provider?.availability || {},
+      isActive: provider?.isActive !== false,
+    };
+
+    const sp = await Staff.create(staffDoc);
 
     return res.status(201).json({ status: 'success', data: { id: sp._id } });
   } catch (err) {
@@ -179,310 +192,279 @@ export const createStaff = async (req, res, next) => {
   }
 };
 
-// PUT /staff/:id
+// UPDATE staff - manage both linked user and embedded contact fields + availability
 export const updateStaff = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id))
+    if (!id || !mongoose.Types.ObjectId.isValid(id))
       return next(errorHandler(400, 'Invalid staff id'));
 
-    // Combined payload shape:
-    // { user: {...}, provider: {...}, availability: {...}, slotsToAdd: [...], slotsToRemove: [...] }
-    const { user, provider, availability, slotsToAdd, slotsToRemove } =
-      req.body;
-
-    const sp = await staffModel.findById(id);
+    const { user, provider, availability, slotsToAdd, slotsToRemove } = req.body;
+    const sp = await Staff.findById(id);
     if (!sp) return next(errorHandler(404, 'Staff not found'));
 
-    // Provider updates (manage staff fields)
+    // update provider fields
     if (provider) {
-      if (provider.hourlyRate !== undefined)
-        sp.hourlyRate = provider.hourlyRate;
+      if (provider.hourlyRate !== undefined) sp.hourlyRate = provider.hourlyRate;
       if (provider.dailyRate !== undefined) sp.dailyRate = provider.dailyRate;
       if (provider.employmentType) sp.employmentType = provider.employmentType;
-      if (provider.specializations)
-        sp.specializations = provider.specializations;
+      if (provider.specializations) sp.specializations = provider.specializations;
       if (provider.bio) sp.bio = provider.bio;
-      if (provider.experienceYears !== undefined)
-        sp.experienceYears = provider.experienceYears;
+      if (provider.experienceYears !== undefined) sp.experienceYears = provider.experienceYears;
       if (provider.isActive !== undefined) sp.isActive = provider.isActive;
-      if (
-        provider.companyId &&
-        mongoose.Types.ObjectId.isValid(provider.companyId)
-      )
-        sp.companyId = provider.companyId;
+      if (provider.companyId && mongoose.Types.ObjectId.isValid(provider.companyId)) sp.companyId = provider.companyId;
       if (provider.location) sp.location = provider.location;
       if (provider.documents) sp.documents = provider.documents;
     }
 
-    // Availability handling
-    if (availability) {
-      // Replace entire availability object if provided
-      sp.availability = availability;
-    }
-    // Append slots if provided (slotsToAdd expected as array of {date,startTime,endTime,payPerHour})
+    // availability handling
+    if (availability) sp.availability = availability;
     if (Array.isArray(slotsToAdd) && slotsToAdd.length) {
       sp.availability = sp.availability || {};
       sp.availability.slots = sp.availability.slots || [];
-      for (const slot of slotsToAdd) {
-        sp.availability.slots.push(slot);
-      }
+      sp.availability.slots.push(...slotsToAdd);
     }
-    // Remove slots if provided (slotsToRemove is array of slot _id strings)
-    if (
-      Array.isArray(slotsToRemove) &&
-      slotsToRemove.length &&
-      Array.isArray(sp.availability?.slots)
-    ) {
-      sp.availability.slots = sp.availability.slots.filter(
-        (s) => !slotsToRemove.includes(String(s._id))
-      );
+    if (Array.isArray(slotsToRemove) && slotsToRemove.length && Array.isArray(sp.availability?.slots)) {
+      sp.availability.slots = sp.availability.slots.filter(s => !slotsToRemove.includes(String(s._id)));
+    }
+
+    // Update linked user if exists
+    if (sp.userId) {
+      if (user) {
+        const u = await userModel.findById(sp.userId);
+        if (u) {
+          if (user.name) u.name = user.name;
+          if (user.phone) u.phone = user.phone;
+          if (user.gender) u.gender = user.gender;
+          if (user.dob) u.dob = user.dob;
+          if (user.address) u.address = user.address;
+          if (user.email && user.email !== u.email) {
+            const exists = await userModel.findOne({ email: user.email });
+            if (exists && String(exists._id) !== String(u._id)) return next(errorHandler(400, 'Email already in use'));
+            u.email = user.email;
+          }
+          await u.save();
+        }
+      }
+    } else {
+      // update embedded contact fields if no linked user
+      if (user) {
+        if (user.name) sp.name = user.name;
+        if (user.phone) sp.phone = user.phone;
+        if (user.email) sp.email = user.email;
+        if (user.profilePicture) sp.profilePicture = user.profilePicture;
+        if (user.gender) sp.gender = user.gender;
+        if (user.dob) sp.dob = user.dob;
+      }
     }
 
     await sp.save();
 
-    // Update linked user document if provided
-    if (user && sp.userId) {
-      const u = await userModel.findById(sp.userId);
-      if (u) {
-        if (user.name) u.name = user.name;
-        if (user.phone) u.phone = user.phone;
-        if (user.gender) u.gender = user.gender;
-        if (user.dob) u.dob = user.dob;
-        if (user.address) u.address = user.address;
-
-        if (user.email && user.email !== u.email) {
-          const exists = await userModel.findOne({ email: user.email });
-          if (exists && String(exists._id) !== String(u._id)) {
-            return next(errorHandler(400, 'Email already in use'));
-          }
-          u.email = user.email;
-        }
-
-        await u.save();
-      }
-    }
-
-    // Return fresh populated document
-    const updated = await staffModel
-      .findById(id)
-      .populate({
-        path: 'userId',
-        select: 'name email phone profilePicture gender dob address',
-      })
+    const updated = await Staff.findById(id)
+      .populate({ path: 'userId', select: 'name email phone profilePicture gender dob' })
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
-    return res
-      .status(200)
-      .json({ status: 'success', message: 'Staff updated', data: updated });
+    return res.status(200).json({ status: 'success', message: 'Staff updated', data: updated });
   } catch (err) {
     console.error('updateStaff error', err);
     return next(errorHandler(500, 'Failed to update staff'));
   }
 };
 
-// GET /customer/services
-export const listServices = async (req, res, next) => {
+// List staff for customer
+export const listStaffCustomer = async (req, res, next) => {
   try {
-    const services = await serviceModel
-      .find({ isActive: true })
-      .select('name description basePrice category')
-      .sort({ name: 1 })
-      .lean();
-    return res.status(200).json({ status: 'success', data: services });
-  } catch (err) {
-    return next(errorHandler(500, 'Failed to fetch services'));
-  }
-};
-
-// GET /customer/bookings
-export const listBookings = async (req, res, next) => {
-  try {
-    const userId = req.user?.id || req.user?._id || req.userId;
-    if (!userId) return next(errorHandler(401, 'Unauthorized'));
-
     const {
-      sort = 'date_asc', // date_asc | date_desc
-      services, // comma separated service ids
-      status, // comma separated statuses
+      search,
+      services,
+      type,
+      minExp,
+      maxExp,
+      rating,
+      priceMin,
+      priceMax,
+      company,
+      sort = 'createdAt_desc', // options: price_asc, price_desc, rating_desc, rating_asc, exp_desc, exp_asc, createdAt_asc, createdAt_desc
       page = 1,
       limit = 20,
     } = req.query;
 
-    const filter = { serviceSeekerId: userId };
+    const pg = Math.max(1, Number(page));
+    const lim = Math.max(1, Number(limit));
+    const skip = (pg - 1) * lim;
 
+    const pipeline = [
+      // join user if linked
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      // only active staff shown to customers
+      { $match: { isActive: true } },
+    ];
+
+    const match = {};
+
+    if (type) match.employmentType = type;
     if (services) {
-      const svcArray = services
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (svcArray.length) filter.serviceId = { $in: svcArray };
+      const arr = String(services).split(',').map((s) => s.trim()).filter(Boolean);
+      if (arr.length) match.specializations = { $in: arr };
+    }
+    if (minExp || maxExp) {
+      match.experienceYears = {};
+      if (minExp) match.experienceYears.$gte = Number(minExp);
+      if (maxExp) match.experienceYears.$lte = Number(maxExp);
+    }
+    if (rating) match.rating = { $gte: Number(rating) };
+    if (priceMin || priceMax) {
+      match.hourlyRate = {};
+      if (priceMin) match.hourlyRate.$gte = Number(priceMin);
+      if (priceMax) match.hourlyRate.$lte = Number(priceMax);
+    }
+    if (company && mongoose.Types.ObjectId.isValid(company)) match.companyId = mongoose.Types.ObjectId(company);
+
+    if (Object.keys(match).length) pipeline.push({ $match: match });
+
+    if (search && String(search).trim() !== '') {
+      const re = new RegExp(String(search).trim(), 'i');
+      pipeline.push({
+        $match: {
+          $or: [
+            { 'user.name': re },
+            { name: re }, // fallback embedded name
+            { specializations: re },
+            { bio: re },
+            { 'location.address': re },
+            { 'location.city': re },
+          ],
+        },
+      });
     }
 
-    if (status) {
-      const statusArray = status
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (statusArray.length) filter.status = { $in: statusArray };
-    } else {
-      // active bookings default statuses if you want only active ones
-      filter.status = {
-        $in: ['requested', 'confirmed', 'in_progress', 'pending'],
-      };
+    // total count
+    const countPipeline = pipeline.concat([{ $count: 'total' }]);
+    const countRes = await Staff.aggregate(countPipeline);
+    const total = (countRes[0] && countRes[0].total) ? countRes[0].total : 0;
+
+    // sorting
+    let sortObj = { createdAt: -1 };
+    switch (sort) {
+      case 'price_asc': sortObj = { hourlyRate: 1 }; break;
+      case 'price_desc': sortObj = { hourlyRate: -1 }; break;
+      case 'rating_desc': sortObj = { rating: -1 }; break;
+      case 'rating_asc': sortObj = { rating: 1 }; break;
+      case 'exp_desc': sortObj = { experienceYears: -1 }; break;
+      case 'exp_asc': sortObj = { experienceYears: 1 }; break;
+      case 'createdAt_asc': sortObj = { createdAt: 1 }; break;
+      case 'createdAt_desc': default: sortObj = { createdAt: -1 }; break;
     }
 
-    const sortField = sort === 'date_desc' ? -1 : 1;
-    // prefer startDateTime, fallback to scheduledDate
-    const sortBy = { startDateTime: sortField, scheduledDate: sortField };
+    pipeline.push(
+      { $sort: sortObj },
+      { $skip: skip },
+      { $limit: lim },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          email: 1,
+          phone: 1,
+          profilePicture: 1,
+          hourlyRate: 1,
+          dailyRate: 1,
+          employmentType: 1,
+          specializations: 1,
+          experienceYears: 1,
+          rating: 1,
+          companyId: 1,
+          location: 1,
+          'user._id': 1,
+          'user.name': 1,
+          'user.profilePicture': 1,
+        },
+      }
+    );
 
-    const skip =
-      (Math.max(1, parseInt(page, 10)) - 1) * Math.max(1, parseInt(limit, 10));
-    const docs = await bookingModel
-      .find(filter)
-      .sort(sortBy)
-      .skip(skip)
-      .limit(Math.max(1, parseInt(limit, 10)))
-      .populate({
-        path: 'serviceProviderId',
-        populate: { path: 'userId', select: 'name profilePicture' },
-        select: 'hourlyRate employmentType specializations',
-      })
-      .populate('serviceId', 'name')
-      .lean();
+    const items = await Staff.aggregate(pipeline);
 
-    // map to UI-friendly shape
-    const data = docs.map((b) => ({
-      id: b._id,
-      bookingId: b.referenceNo || b._id,
-      serviceName: b.serviceId?.name || '',
-      provider: b.serviceProviderId?.userId
-        ? {
-            id: b.serviceProviderId._id,
-            name: b.serviceProviderId.userId.name,
-            avatar: b.serviceProviderId.userId.profilePicture,
-            specializations: b.serviceProviderId.specializations || [],
-            employmentType: b.serviceProviderId.employmentType,
-            rate:
-              b.serviceProviderId.hourlyRate ||
-              b.serviceProviderId.dailyRate ||
-              null,
-          }
-        : null,
-      startDateTime: b.startDateTime || b.scheduledDate || null,
-      endDateTime: b.endDateTime || null,
-      timeRange:
-        b.startTime && b.endTime ? `${b.startTime} - ${b.endTime}` : undefined,
-      role: b.role || b.serviceId?.name || '',
-      feeText: b.amount
-        ? `₹ ${b.amount}`
-        : b.serviceProviderId?.hourlyRate
-          ? `₹ ${b.serviceProviderId.hourlyRate}/hr`
-          : '',
-      status: b.status,
-      location: b.location || null,
+    const data = items.map((p) => ({
+      id: p._id,
+      name: (p.user && p.user.name) || p.name || '',
+      avatar: (p.user && p.user.profilePicture) || p.profilePicture || null,
+      employmentType: p.employmentType,
+      feeText: p.hourlyRate ? `₹ ${p.hourlyRate}/hr` : (p.dailyRate ? `₹ ${p.dailyRate}/day` : ''),
+      hourlyRate: p.hourlyRate,
+      dailyRate: p.dailyRate,
+      specializations: p.specializations || [],
+      experienceYears: p.experienceYears || 0,
+      rating: p.rating || 0,
+      companyId: p.companyId || null,
+      location: p.location || null,
     }));
 
-    return res
-      .status(200)
-      .json({
-        status: 'success',
-        meta: { page: Number(page), limit: Number(limit) },
-        data,
-      });
+    return res.status(200).json({
+      status: 'success',
+      meta: { page: pg, limit: lim, total },
+      data,
+    });
   } catch (err) {
-    console.error('listBookings error', err);
-    return next(errorHandler(500, 'Failed to fetch bookings'));
+    console.error('listStaffCustomer error', err);
+    return next(errorHandler(500, 'Failed to fetch staff list'));
   }
 };
 
-// GET /customer/providers/:id
-export const staffBookingDetails = async (req, res, next) => {
+// GET /customer/providers/:id  (Customer -> Staff Details UI)
+export const staffDetailsForCustomer = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id) return next(errorHandler(400, 'Provider id required'));
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return next(errorHandler(400, 'Invalid id'));
 
-    const provider = await ServiceProvider.findById(id)
-      .populate({
-        path: 'userId',
-        select: 'name profilePicture phone gender dob',
-      })
+    const staff = await Staff.findById(id)
+      .populate({ path: 'userId', select: 'name profilePicture' })
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
-    if (!provider) return next(errorHandler(404, 'Provider not found'));
+    if (!staff) return next(errorHandler(404, 'Staff not found'));
 
-    // fetch recent feedbacks (3)
-    const feedbacks = await Feedback.find({ providerId: id })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate({ path: 'authorId', select: 'name profilePicture' })
-      .lean();
+    // return shape tailored for customer UI
+    const feedbacks = await Feedback.find({ providerId: id }).sort({ createdAt: -1 }).limit(6).lean();
 
     return res.status(200).json({
       status: 'success',
       data: {
-        provider,
-        feedbacks: feedbacks.map((f) => ({
-          id: f._id,
-          rating: f.rating,
-          comment: f.comment,
-          authorName: f.authorName || f.authorId?.name,
-          authorAvatar: f.authorId?.profilePicture || null,
-          createdAt: f.createdAt,
-        })),
-      },
+        id: staff._id,
+        name: staff.userId?.name || staff.name,
+        avatar: staff.userId?.profilePicture || staff.profilePicture || null,
+        employmentType: staff.employmentType,
+        shiftInfo: staff.availability?.weekly?.shiftHoursPerDay || null,
+        hourlyRate: staff.hourlyRate,
+        experienceYears: staff.experienceYears,
+        location: staff.location,
+        phone: staff.phone || (staff.userId ? undefined : null), // show only if present
+        specializations: staff.specializations || [],
+        bio: staff.bio || '',
+        availability: staff.availability || {},
+        company: staff.companyId || null,
+        feedbacks: feedbacks.map(f => ({ id: f._id, rating: f.rating, comment: f.comment, authorName: f.authorName, createdAt: f.createdAt }))
+      }
     });
   } catch (err) {
-    console.error('providerDetails error', err);
-    return next(errorHandler(500, 'Failed to fetch provider details'));
+    console.error('providerDetailsForCustomer', err);
+    return next(errorHandler(500, 'Internal Server Error'));
   }
 };
 
-// GET /customer/providers/:id/feedbacks
-export const staffFeedbacks = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.max(1, parseInt(req.query.limit || '10', 10));
-    const skip = (page - 1) * limit;
 
-    const [items, total] = await Promise.all([
-      Feedback.find({ providerId: id })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate({ path: 'authorId', select: 'name profilePicture' })
-        .lean(),
-      Feedback.countDocuments({ providerId: id }),
-    ]);
-
-    const data = items.map((f) => ({
-      id: f._id,
-      rating: f.rating,
-      comment: f.comment,
-      authorName: f.authorName || f.authorId?.name,
-      authorAvatar: f.authorId?.profilePicture || null,
-      createdAt: f.createdAt,
-    }));
-
-    return res.status(200).json({
-      status: 'success',
-      meta: { page, limit, total },
-      data,
-    });
-  } catch (err) {
-    console.error('staffFeedbacks error', err);
-    return next(errorHandler(500, 'Failed to fetch feedbacks'));
-  }
-};
-
-// GET /companies/:id
 export const companyDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id) return next(errorHandler(400, 'Company id required'));
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return next(errorHandler(400, 'Invalid company id'));
 
     const company = await Company.findById(id).lean();
     if (!company) return next(errorHandler(404, 'Company not found'));

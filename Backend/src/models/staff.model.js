@@ -2,12 +2,22 @@ import mongoose from 'mongoose';
 
 const StaffSchema = new mongoose.Schema(
   {
+    // allow staff to be either linked to a registered user OR be a company-created record
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false, // changed from required:true -> optional
       index: true,
     },
+
+    // fallback contact/profile fields for staff created by company (no user account)
+    name: { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true },
+    phone: { type: String },
+    profilePicture: { type: String },
+    gender: { type: String },
+    dob: { type: Date },
+
     companyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Company',
@@ -46,5 +56,5 @@ const StaffSchema = new mongoose.Schema(
 StaffSchema.index({ companyId: 1, employmentType: 1 });
 StaffSchema.index({ 'location.coordinates': '2dsphere' });
 
-export default mongoose.models.staffModel ||
-  mongoose.model('StaffModel', StaffSchema);
+// use consistent model name
+export default mongoose.models.Staff || mongoose.model('Staff', StaffSchema);
