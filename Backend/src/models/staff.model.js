@@ -1,5 +1,22 @@
 import mongoose from 'mongoose';
 
+const AvailabilitySchema = new mongoose.Schema(
+  {
+    weekly: {
+      type: Object,
+      default: {},
+    },
+    slots: [
+      {
+        day: String,
+        startTime: String,
+        endTime: String,
+      },
+    ],
+  },
+  { _id: false }
+);
+
 const StaffSchema = new mongoose.Schema(
   {
     // allow staff to be either linked to a registered user OR be a company-created record
