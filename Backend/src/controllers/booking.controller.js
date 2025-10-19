@@ -15,24 +15,38 @@ const generateReferenceNo = () => {
 export const createBooking = async (req, res, next) => {
   try {
     const { staffId, service, startDate, endDate, notes, location } = req.body;
-    if (!staffId || !mongoose.Types.ObjectId.isValid(staffId)) return next(errorHandler(400, 'Invalid staffId'));
+    if (!staffId || !mongoose.Types.ObjectId.isValid(staffId))
+      return next(errorHandler(400, 'Invalid staffId'));
     if (!service) return next(errorHandler(400, 'service is required'));
-    if (!startDate || !endDate) return next(errorHandler(400, 'startDate and endDate are required'));
+    if (!startDate || !endDate)
+      return next(errorHandler(400, 'startDate and endDate are required'));
 
     const sd = new Date(startDate);
     const ed = new Date(endDate);
-    if (Number.isNaN(sd.getTime()) || Number.isNaN(ed.getTime())) return next(errorHandler(400, 'Invalid dates'));
+    if (Number.isNaN(sd.getTime()) || Number.isNaN(ed.getTime()))
+      return next(errorHandler(400, 'Invalid dates'));
     if (ed < sd) return next(errorHandler(400, 'endDate must be >= startDate'));
 
     const staff = await Staff.findById(staffId).lean();
-    if (!staff || staff.isActive === false) return next(errorHandler(404, 'Staff not found or inactive'));
-    if (Array.isArray(staff.specializations) && staff.specializations.length && !staff.specializations.includes(service)) {
-      return next(errorHandler(400, 'Selected staff does not offer this service'));
+    if (!staff || staff.isActive === false)
+      return next(errorHandler(404, 'Staff not found or inactive'));
+    if (
+      Array.isArray(staff.specializations) &&
+      staff.specializations.length &&
+      !staff.specializations.includes(service)
+    ) {
+      return next(
+        errorHandler(400, 'Selected staff does not offer this service')
+      );
     }
 
     const employmentType = staff.employmentType || 'full_time';
-    const shiftHoursPerDay = staff.availability?.weekly?.shiftHoursPerDay || (employmentType === 'part_time' ? 4 : 8);
-    const timeWindowPerDay = staff.availability?.weekly?.timeWindowPerDay || (employmentType === 'part_time' ? '10:00-14:00' : '10:00-18:00');
+    const shiftHoursPerDay =
+      staff.availability?.weekly?.shiftHoursPerDay ||
+      (employmentType === 'part_time' ? 4 : 8);
+    const timeWindowPerDay =
+      staff.availability?.weekly?.timeWindowPerDay ||
+      (employmentType === 'part_time' ? '10:00-14:00' : '10:00-18:00');
 
     // compute fee snapshot
     const msPerDay = 24 * 60 * 60 * 1000;
@@ -82,7 +96,8 @@ export const createBooking = async (req, res, next) => {
 export const listCustomerBookings = async (req, res, next) => {
   try {
     const userId = req.user?.id;
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) return next(errorHandler(401, 'Unauthorized'));
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId))
+      return next(errorHandler(401, 'Unauthorized'));
 
     const {
       page = 1,
@@ -98,11 +113,17 @@ export const listCustomerBookings = async (req, res, next) => {
 
     const match = { userId: mongoose.Types.ObjectId(userId) };
     if (services) {
-      const arr = String(services).split(',').map((s) => s.trim()).filter(Boolean);
+      const arr = String(services)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (arr.length) match.service = { $in: arr };
     }
     if (status) {
-      const st = String(status).split(',').map((s) => s.trim()).filter(Boolean);
+      const st = String(status)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (st.length) match.status = { $in: st };
     }
 
@@ -131,7 +152,7 @@ export const listCustomerBookings = async (req, res, next) => {
     // total count
     const countPipeline = pipeline.concat([{ $count: 'total' }]);
     const countRes = await Booking.aggregate(countPipeline);
-    const total = (countRes[0] && countRes[0].total) ? countRes[0].total : 0;
+    const total = countRes[0] && countRes[0].total ? countRes[0].total : 0;
 
     let sortObj = { startDate: -1, createdAt: -1 };
     if (sort === 'date_asc') sortObj = { startDate: 1, createdAt: 1 };
@@ -157,7 +178,9 @@ export const listCustomerBookings = async (req, res, next) => {
           staff: {
             _id: '$staff._id',
             name: { $ifNull: ['$staffUser.name', '$staff.name'] },
-            profilePicture: { $ifNull: ['$staffUser.profilePicture', '$staff.profilePicture'] },
+            profilePicture: {
+              $ifNull: ['$staffUser.profilePicture', '$staff.profilePicture'],
+            },
           },
         },
       }
@@ -174,16 +197,24 @@ export const listCustomerBookings = async (req, res, next) => {
         avatar: b.staff?.profilePicture || null,
       },
       date: { start: b.startDate, end: b.endDate },
-      time: b.timeWindowPerDay || (b.shiftHoursPerDay ? `${b.shiftHoursPerDay} hrs/day` : null),
+      time:
+        b.timeWindowPerDay ||
+        (b.shiftHoursPerDay ? `${b.shiftHoursPerDay} hrs/day` : null),
       role: b.service,
       status: b.status,
-      feeText: b.feeSnapshot?.hourlyRate ? `₹ ${b.feeSnapshot.hourlyRate}/hr` : (b.feeSnapshot?.dailyRate ? `₹ ${b.feeSnapshot.dailyRate}/day` : null),
+      feeText: b.feeSnapshot?.hourlyRate
+        ? `₹ ${b.feeSnapshot.hourlyRate}/hr`
+        : b.feeSnapshot?.dailyRate
+          ? `₹ ${b.feeSnapshot.dailyRate}/day`
+          : null,
       canPay: b.status === 'Confirmed' || b.status === 'Completed',
       canReview: b.status === 'Completed' && !b.rating,
       rating: b.rating || null,
     }));
 
-    return res.status(200).json({ status: 'success', meta: { page: pg, limit: lim, total }, data });
+    return res
+      .status(200)
+      .json({ status: 'success', meta: { page: pg, limit: lim, total }, data });
   } catch (err) {
     console.error('listCustomerBookings error', err);
     return next(errorHandler(500, 'Failed to fetch bookings'));

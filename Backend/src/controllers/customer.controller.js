@@ -109,13 +109,11 @@ export const listBookings = async (req, res, next) => {
       location: b.location || null,
     }));
 
-    return res
-      .status(200)
-      .json({
-        status: 'success',
-        meta: { page: Number(page), limit: Number(limit) },
-        data,
-      });
+    return res.status(200).json({
+      status: 'success',
+      meta: { page: Number(page), limit: Number(limit) },
+      data,
+    });
   } catch (err) {
     console.error('listBookings error', err);
     return next(errorHandler(500, 'Failed to fetch bookings'));

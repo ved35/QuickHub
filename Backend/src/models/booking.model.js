@@ -3,10 +3,24 @@ import mongoose from 'mongoose';
 const BookingSchema = new mongoose.Schema(
   {
     referenceNo: { type: String, required: true, unique: true, trim: true },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    staffId: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff', required: true, index: true },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    staffId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Staff',
+      required: true,
+      index: true,
+    },
     service: { type: String, required: true, index: true },
-    employmentType: { type: String, enum: ['full_time', 'part_time', 'freelance'], required: true },
+    employmentType: {
+      type: String,
+      enum: ['full_time', 'part_time', 'freelance'],
+      required: true,
+    },
     shiftHoursPerDay: { type: Number },
     timeWindowPerDay: { type: String },
     startDate: { type: Date, required: true, index: true },
@@ -19,8 +33,17 @@ const BookingSchema = new mongoose.Schema(
       sgst: { type: Number, default: 0 },
       total: { type: Number, default: 0 },
     },
-    status: { type: String, enum: ['Pending', 'Confirmed', 'Rejected', 'Completed', 'Cancelled'], default: 'Pending', index: true },
-    paymentStatus: { type: String, enum: ['Unpaid', 'Paid'], default: 'Unpaid' },
+    status: {
+      type: String,
+      enum: ['Pending', 'Confirmed', 'Rejected', 'Completed', 'Cancelled'],
+      default: 'Pending',
+      index: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['Unpaid', 'Paid'],
+      default: 'Unpaid',
+    },
     rating: { type: Number },
     review: { type: String },
     notes: { type: String },
@@ -32,5 +55,5 @@ const BookingSchema = new mongoose.Schema(
 BookingSchema.index({ userId: 1, startDate: -1 });
 BookingSchema.index({ staffId: 1, status: 1, startDate: -1 });
 
-export default mongoose.models.Booking || mongoose.model('Booking', BookingSchema);
-
+export default mongoose.models.Booking ||
+  mongoose.model('Booking', BookingSchema);

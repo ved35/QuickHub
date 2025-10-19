@@ -44,22 +44,35 @@ const StaffSchema = new mongoose.Schema(
     specializations: [{ type: String, index: true }], // service names or ids
     bio: { type: String },
     experienceYears: { type: Number, default: 0 },
-    availability: { 
-      type: mongoose.Schema.Types.Mixed, 
-      default: () => ({}) 
+    availability: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({}),
     },
     // Availability fields for different employment types (optional)
     availableHours: {
       // For part-time staff only
       startTime: { type: String }, // e.g., "09:00"
-      endTime: { type: String },   // e.g., "17:00"
-      daysPerWeek: { type: Number, min: 1, max: 6 }
+      endTime: { type: String }, // e.g., "17:00"
+      daysPerWeek: { type: Number, min: 1, max: 6 },
     },
     availableDays: {
       // For full-time staff only
-      workingDays: [{ type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] }],
+      workingDays: [
+        {
+          type: String,
+          enum: [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+          ],
+        },
+      ],
       startTime: { type: String }, // e.g., "09:00"
-      endTime: { type: String }    // e.g., "18:00"
+      endTime: { type: String }, // e.g., "18:00"
     },
     isActive: { type: Boolean, default: true, index: true },
     rating: { type: Number, default: 0 },
@@ -84,7 +97,7 @@ StaffSchema.index({ companyId: 1, employmentType: 1 });
 StaffSchema.index({ 'location.coordinates': '2dsphere' });
 
 // Pre-save middleware to validate availability fields based on employment type
-StaffSchema.pre('save', function(next) {
+StaffSchema.pre('save', function (next) {
   if (this.employmentType === 'full_time') {
     // For full-time staff, clear availableHours if it exists
     if (this.availableHours) {

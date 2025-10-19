@@ -151,9 +151,11 @@ export const createStaff = async (req, res, next) => {
       gender: provider?.gender,
       dob: provider?.dob,
       address: provider?.address,
-      companyId: provider?.companyId && mongoose.Types.ObjectId.isValid(provider.companyId) 
-        ? new mongoose.Types.ObjectId(provider.companyId) 
-        : undefined,
+      companyId:
+        provider?.companyId &&
+        mongoose.Types.ObjectId.isValid(provider.companyId)
+          ? new mongoose.Types.ObjectId(provider.companyId)
+          : undefined,
       hourlyRate: provider?.hourlyRate,
       dailyRate: provider?.dailyRate,
       employmentType: provider?.employmentType,
@@ -170,12 +172,12 @@ export const createStaff = async (req, res, next) => {
 
     const sp = await Staff.create(staffDoc);
 
-    return res.status(201).json({ 
-      status: 'success', 
-      data: { 
+    return res.status(201).json({
+      status: 'success',
+      data: {
         id: sp._id.toString(),
-        message: 'Staff created successfully'
-      } 
+        message: 'Staff created successfully',
+      },
     });
   } catch (err) {
     console.error('createStaff error', err);
@@ -199,25 +201,36 @@ export const updateStaff = async (req, res, next) => {
       if (provider.name !== undefined) sp.name = provider.name;
       if (provider.email !== undefined) sp.email = provider.email;
       if (provider.phone !== undefined) sp.phone = provider.phone;
-      if (provider.profilePicture !== undefined) sp.profilePicture = provider.profilePicture;
+      if (provider.profilePicture !== undefined)
+        sp.profilePicture = provider.profilePicture;
       if (provider.gender !== undefined) sp.gender = provider.gender;
-      if (provider.hourlyRate !== undefined) sp.hourlyRate = provider.hourlyRate;
+      if (provider.hourlyRate !== undefined)
+        sp.hourlyRate = provider.hourlyRate;
       if (provider.dailyRate !== undefined) sp.dailyRate = provider.dailyRate;
       if (provider.employmentType) sp.employmentType = provider.employmentType;
-      if (provider.specializations) sp.specializations = provider.specializations;
+      if (provider.specializations)
+        sp.specializations = provider.specializations;
       if (provider.bio) sp.bio = provider.bio;
-      if (provider.experienceYears !== undefined) sp.experienceYears = provider.experienceYears;
+      if (provider.experienceYears !== undefined)
+        sp.experienceYears = provider.experienceYears;
       if (provider.isActive !== undefined) sp.isActive = provider.isActive;
-      if (provider.companyId && mongoose.Types.ObjectId.isValid(provider.companyId)) sp.companyId = provider.companyId;
+      if (
+        provider.companyId &&
+        mongoose.Types.ObjectId.isValid(provider.companyId)
+      )
+        sp.companyId = provider.companyId;
       if (provider.location) sp.location = provider.location;
       if (provider.documents) sp.documents = provider.documents;
       // New fields
       if (provider.dob !== undefined) sp.dob = provider.dob;
       if (provider.address !== undefined) sp.address = provider.address;
-      if (provider.description !== undefined) sp.description = provider.description;
+      if (provider.description !== undefined)
+        sp.description = provider.description;
       // Conditional availability fields (optional)
-      if (provider.availableHours !== undefined) sp.availableHours = provider.availableHours;
-      if (provider.availableDays !== undefined) sp.availableDays = provider.availableDays;
+      if (provider.availableHours !== undefined)
+        sp.availableHours = provider.availableHours;
+      if (provider.availableDays !== undefined)
+        sp.availableDays = provider.availableDays;
     }
 
     // availability handling
@@ -227,8 +240,14 @@ export const updateStaff = async (req, res, next) => {
       sp.availability.slots = sp.availability.slots || [];
       sp.availability.slots.push(...slotsToAdd);
     }
-    if (Array.isArray(slotsToRemove) && slotsToRemove.length && Array.isArray(sp.availability?.slots)) {
-      sp.availability.slots = sp.availability.slots.filter(s => !slotsToRemove.includes(String(s._id)));
+    if (
+      Array.isArray(slotsToRemove) &&
+      slotsToRemove.length &&
+      Array.isArray(sp.availability?.slots)
+    ) {
+      sp.availability.slots = sp.availability.slots.filter(
+        (s) => !slotsToRemove.includes(String(s._id))
+      );
     }
 
     await sp.save();
@@ -237,7 +256,9 @@ export const updateStaff = async (req, res, next) => {
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
-    return res.status(200).json({ status: 'success', message: 'Staff updated', data: updated });
+    return res
+      .status(200)
+      .json({ status: 'success', message: 'Staff updated', data: updated });
   } catch (err) {
     console.error('updateStaff error', err);
     return next(errorHandler(500, 'Failed to update staff'));
@@ -275,7 +296,10 @@ export const listStaffCustomer = async (req, res, next) => {
 
     if (type) match.employmentType = type;
     if (services) {
-      const arr = String(services).split(',').map((s) => s.trim()).filter(Boolean);
+      const arr = String(services)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (arr.length) match.specializations = { $in: arr };
     }
     if (minExp || maxExp) {
@@ -289,7 +313,8 @@ export const listStaffCustomer = async (req, res, next) => {
       if (priceMin) match.hourlyRate.$gte = Number(priceMin);
       if (priceMax) match.hourlyRate.$lte = Number(priceMax);
     }
-    if (company && mongoose.Types.ObjectId.isValid(company)) match.companyId = mongoose.Types.ObjectId(company);
+    if (company && mongoose.Types.ObjectId.isValid(company))
+      match.companyId = mongoose.Types.ObjectId(company);
 
     if (Object.keys(match).length) pipeline.push({ $match: match });
 
@@ -312,19 +337,36 @@ export const listStaffCustomer = async (req, res, next) => {
     // total count
     const countPipeline = pipeline.concat([{ $count: 'total' }]);
     const countRes = await Staff.aggregate(countPipeline);
-    const total = (countRes[0] && countRes[0].total) ? countRes[0].total : 0;
+    const total = countRes[0] && countRes[0].total ? countRes[0].total : 0;
 
     // sorting
     let sortObj = { createdAt: -1 };
     switch (sort) {
-      case 'price_asc': sortObj = { hourlyRate: 1 }; break;
-      case 'price_desc': sortObj = { hourlyRate: -1 }; break;
-      case 'rating_desc': sortObj = { rating: -1 }; break;
-      case 'rating_asc': sortObj = { rating: 1 }; break;
-      case 'exp_desc': sortObj = { experienceYears: -1 }; break;
-      case 'exp_asc': sortObj = { experienceYears: 1 }; break;
-      case 'createdAt_asc': sortObj = { createdAt: 1 }; break;
-      case 'createdAt_desc': default: sortObj = { createdAt: -1 }; break;
+      case 'price_asc':
+        sortObj = { hourlyRate: 1 };
+        break;
+      case 'price_desc':
+        sortObj = { hourlyRate: -1 };
+        break;
+      case 'rating_desc':
+        sortObj = { rating: -1 };
+        break;
+      case 'rating_asc':
+        sortObj = { rating: 1 };
+        break;
+      case 'exp_desc':
+        sortObj = { experienceYears: -1 };
+        break;
+      case 'exp_asc':
+        sortObj = { experienceYears: 1 };
+        break;
+      case 'createdAt_asc':
+        sortObj = { createdAt: 1 };
+        break;
+      case 'createdAt_desc':
+      default:
+        sortObj = { createdAt: -1 };
+        break;
     }
 
     pipeline.push(
@@ -360,7 +402,11 @@ export const listStaffCustomer = async (req, res, next) => {
       name: p.name || '',
       avatar: p.profilePicture || null,
       employmentType: p.employmentType,
-      feeText: p.hourlyRate ? `₹ ${p.hourlyRate}/hr` : (p.dailyRate ? `₹ ${p.dailyRate}/day` : ''),
+      feeText: p.hourlyRate
+        ? `₹ ${p.hourlyRate}/hr`
+        : p.dailyRate
+          ? `₹ ${p.dailyRate}/day`
+          : '',
       hourlyRate: p.hourlyRate,
       dailyRate: p.dailyRate,
       specializations: p.specializations || [],
@@ -388,7 +434,8 @@ export const listStaffCustomer = async (req, res, next) => {
 export const staffDetailsForCustomer = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return next(errorHandler(400, 'Invalid id'));
+    if (!id || !mongoose.Types.ObjectId.isValid(id))
+      return next(errorHandler(400, 'Invalid id'));
 
     const staff = await Staff.findById(id)
       .populate({ path: 'companyId', select: 'name phone email address' })
@@ -397,7 +444,10 @@ export const staffDetailsForCustomer = async (req, res, next) => {
     if (!staff) return next(errorHandler(404, 'Staff not found'));
 
     // return shape tailored for customer UI
-    const feedbacks = await Feedback.find({ providerId: id }).sort({ createdAt: -1 }).limit(6).lean();
+    const feedbacks = await Feedback.find({ providerId: id })
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .lean();
 
     return res.status(200).json({
       status: 'success',
@@ -418,8 +468,14 @@ export const staffDetailsForCustomer = async (req, res, next) => {
         availableHours: staff.availableHours || null,
         availableDays: staff.availableDays || null,
         company: staff.companyId || null,
-        feedbacks: feedbacks.map(f => ({ id: f._id, rating: f.rating, comment: f.comment, authorName: f.authorName, createdAt: f.createdAt }))
-      }
+        feedbacks: feedbacks.map((f) => ({
+          id: f._id,
+          rating: f.rating,
+          comment: f.comment,
+          authorName: f.authorName,
+          createdAt: f.createdAt,
+        })),
+      },
     });
   } catch (err) {
     console.error('providerDetailsForCustomer', err);
@@ -427,11 +483,11 @@ export const staffDetailsForCustomer = async (req, res, next) => {
   }
 };
 
-
 export const companyDetails = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return next(errorHandler(400, 'Invalid company id'));
+    if (!id || !mongoose.Types.ObjectId.isValid(id))
+      return next(errorHandler(400, 'Invalid company id'));
 
     const company = await Company.findById(id).lean();
     if (!company) return next(errorHandler(404, 'Company not found'));
