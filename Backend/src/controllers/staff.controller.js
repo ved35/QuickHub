@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Staff from '../models/staff.model.js';
+import staffModel from '../models/staff.model.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 import bcryptjs from 'bcryptjs';
 

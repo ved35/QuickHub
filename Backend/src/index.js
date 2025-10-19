@@ -7,6 +7,7 @@ import { connectDB } from './utils/db.js';
 import userRouter from './router/user.route.js';
 import authRouter from './router/auth.route.js';
 import staffRouter from './router/staff.route.js';
+import bookingRouter from './router/booking.route.js';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/staff', staffRouter);
+app.use('/api/booking', bookingRouter);
 
 app.use((error, req, res, next) => {
   const statusCode = error.statusCode || 500;

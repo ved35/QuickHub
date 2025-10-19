@@ -4,7 +4,7 @@ import * as staffController from '../controllers/staff.controller.js';
 
 const staffRouter = express.Router();
 
-staffRouter.get('/list-staff', verifyToken,staffController.listStaff);
+staffRouter.get('/list-staff',verifyToken,staffController.listStaff);
 staffRouter.get('/customer/list-staff', verifyToken,staffController.listStaffCustomer); 
 
 staffRouter.post('/create-staff', verifyToken,staffController.createStaff);
