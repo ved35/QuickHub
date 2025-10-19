@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import staffModel from '../models/staff.model.js';
+import Staff from '../models/staff.model.js';
 import { errorHandler } from '../middleware/errorHandler.js';
 import bcryptjs from 'bcryptjs';
 
@@ -22,18 +22,8 @@ export const listStaff = async (req, res, next) => {
     const lim = Math.max(1, Number(limit));
     const skip = (pg - 1) * lim;
 
-    // base pipeline: join user document
-    const pipeline = [
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-    ];
+    // base pipeline: no user lookup needed
+    const pipeline = [];
 
     // Filters
     const match = {};
@@ -62,11 +52,12 @@ export const listStaff = async (req, res, next) => {
       pipeline.push({
         $match: {
           $or: [
-            { 'user.name': re },
-            { 'user.email': re },
-            { 'user.phone': re },
+            { name: re },
+            { email: re },
+            { phone: re },
             { specializations: re },
             { bio: re },
+            { description: re },
           ],
         },
       });
@@ -74,7 +65,7 @@ export const listStaff = async (req, res, next) => {
 
     // Count total (use a copy of pipeline)
     const countPipeline = pipeline.concat([{ $count: 'total' }]);
-    const countRes = await staffModel.aggregate(countPipeline);
+    const countRes = await Staff.aggregate(countPipeline);
     const total = countRes[0] && countRes[0].total ? countRes[0].total : 0;
 
     // Sorting - default: createdAt desc (table desc order)
@@ -90,6 +81,11 @@ export const listStaff = async (req, res, next) => {
       {
         $project: {
           _id: 1,
+          name: 1,
+          email: 1,
+          phone: 1,
+          profilePicture: 1,
+          gender: 1,
           hourlyRate: 1,
           dailyRate: 1,
           employmentType: 1,
@@ -97,29 +93,37 @@ export const listStaff = async (req, res, next) => {
           experienceYears: 1,
           rating: 1,
           isActive: 1,
-          'user._id': 1,
-          'user.name': 1,
-          'user.profilePicture': 1,
-          'user.phone': 1,
-          'user.gender': 1,
+          dob: 1,
+          address: 1,
+          description: 1,
+          availableHours: 1,
+          availableDays: 1,
         },
       }
     );
 
-    const items = await staffModel.aggregate(pipeline);
+    const items = await Staff.aggregate(pipeline);
 
-    // when listing, fall back to embedded fields if user not linked
+    // Map staff data directly from embedded fields
     const data = items.map((p) => ({
       id: p._id,
-      name: (p.user && p.user.name) || p.name || '',
-      avatar: (p.user && p.user.profilePicture) || p.profilePicture || null,
+      name: p.name || '',
+      avatar: p.profilePicture || null,
       employmentType: p.employmentType,
       hourlyRate: p.hourlyRate,
       specializations: p.specializations || [],
       experienceYears: p.experienceYears || 0,
       rating: p.rating || 0,
-      phone: (p.user && p.user.phone) || p.phone || null,
+      phone: p.phone || null,
       isActive: p.isActive === undefined ? true : p.isActive,
+      // New fields
+      dob: p.dob || null,
+      email: p.email || null,
+      address: p.address || null,
+      description: p.description || null,
+      availableHours: p.availableHours || null,
+      availableDays: p.availableDays || null,
+      gender: p.gender || null,
     }));
 
     return res.status(200).json({
@@ -133,78 +137,70 @@ export const listStaff = async (req, res, next) => {
   }
 };
 
-// CREATE staff - supports company-created staff (no user) or linked user
+// CREATE staff - company-created staff with embedded fields
 export const createStaff = async (req, res, next) => {
   try {
-    const { user, provider } = req.body;
+    const { provider } = req.body;
 
-    // if frontend provides user object with email -> create/link real User
-    let linkedUserId = null;
-    if (user && user.email) {
-      let existing = await userModel.findOne({ email: user.email });
-      if (existing) {
-        // update minimal profile on existing user
-        existing.name = user.name || existing.name;
-        existing.phone = user.phone || existing.phone;
-        await existing.save();
-        linkedUserId = existing._id;
-      } else {
-        const passwordHash = user.password
-          ? await bcryptjs.hash(user.password, 10)
-          : undefined;
-        const createdUser = await userModel.create({
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          gender: user.gender,
-          dob: user.dob,
-          username: user.username || user.email,
-          password: passwordHash,
-        });
-        linkedUserId = createdUser._id;
-      }
-    }
-
-    // Build staff doc
+    // Build staff doc with embedded fields
     const staffDoc = {
-      userId: linkedUserId || undefined,
-      name: linkedUserId ? undefined : (user?.name || provider?.name),
-      email: linkedUserId ? undefined : (user?.email || provider?.email),
-      phone: linkedUserId ? undefined : (user?.phone || provider?.phone),
+      name: provider?.name,
+      email: provider?.email,
+      phone: provider?.phone,
       profilePicture: provider?.profilePicture,
-      companyId: provider?.companyId,
+      gender: provider?.gender,
+      dob: provider?.dob,
+      address: provider?.address,
+      companyId: provider?.companyId && mongoose.Types.ObjectId.isValid(provider.companyId) 
+        ? new mongoose.Types.ObjectId(provider.companyId) 
+        : undefined,
       hourlyRate: provider?.hourlyRate,
       dailyRate: provider?.dailyRate,
       employmentType: provider?.employmentType,
       specializations: provider?.specializations || [],
       bio: provider?.bio,
+      description: provider?.description,
       experienceYears: provider?.experienceYears || 0,
       availability: provider?.availability || {},
       isActive: provider?.isActive !== false,
+      // Conditional availability fields (optional)
+      availableHours: provider?.availableHours || undefined,
+      availableDays: provider?.availableDays || undefined,
     };
 
     const sp = await Staff.create(staffDoc);
 
-    return res.status(201).json({ status: 'success', data: { id: sp._id } });
+    return res.status(201).json({ 
+      status: 'success', 
+      data: { 
+        id: sp._id.toString(),
+        message: 'Staff created successfully'
+      } 
+    });
   } catch (err) {
     console.error('createStaff error', err);
     return next(errorHandler(500, 'Failed to create staff'));
   }
 };
 
-// UPDATE staff - manage both linked user and embedded contact fields + availability
+// UPDATE staff - manage embedded contact fields + availability
 export const updateStaff = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!id || !mongoose.Types.ObjectId.isValid(id))
       return next(errorHandler(400, 'Invalid staff id'));
 
-    const { user, provider, availability, slotsToAdd, slotsToRemove } = req.body;
+    const { provider, availability, slotsToAdd, slotsToRemove } = req.body;
     const sp = await Staff.findById(id);
     if (!sp) return next(errorHandler(404, 'Staff not found'));
 
     // update provider fields
     if (provider) {
+      if (provider.name !== undefined) sp.name = provider.name;
+      if (provider.email !== undefined) sp.email = provider.email;
+      if (provider.phone !== undefined) sp.phone = provider.phone;
+      if (provider.profilePicture !== undefined) sp.profilePicture = provider.profilePicture;
+      if (provider.gender !== undefined) sp.gender = provider.gender;
       if (provider.hourlyRate !== undefined) sp.hourlyRate = provider.hourlyRate;
       if (provider.dailyRate !== undefined) sp.dailyRate = provider.dailyRate;
       if (provider.employmentType) sp.employmentType = provider.employmentType;
@@ -215,6 +211,13 @@ export const updateStaff = async (req, res, next) => {
       if (provider.companyId && mongoose.Types.ObjectId.isValid(provider.companyId)) sp.companyId = provider.companyId;
       if (provider.location) sp.location = provider.location;
       if (provider.documents) sp.documents = provider.documents;
+      // New fields
+      if (provider.dob !== undefined) sp.dob = provider.dob;
+      if (provider.address !== undefined) sp.address = provider.address;
+      if (provider.description !== undefined) sp.description = provider.description;
+      // Conditional availability fields (optional)
+      if (provider.availableHours !== undefined) sp.availableHours = provider.availableHours;
+      if (provider.availableDays !== undefined) sp.availableDays = provider.availableDays;
     }
 
     // availability handling
@@ -228,40 +231,9 @@ export const updateStaff = async (req, res, next) => {
       sp.availability.slots = sp.availability.slots.filter(s => !slotsToRemove.includes(String(s._id)));
     }
 
-    // Update linked user if exists
-    if (sp.userId) {
-      if (user) {
-        const u = await userModel.findById(sp.userId);
-        if (u) {
-          if (user.name) u.name = user.name;
-          if (user.phone) u.phone = user.phone;
-          if (user.gender) u.gender = user.gender;
-          if (user.dob) u.dob = user.dob;
-          if (user.address) u.address = user.address;
-          if (user.email && user.email !== u.email) {
-            const exists = await userModel.findOne({ email: user.email });
-            if (exists && String(exists._id) !== String(u._id)) return next(errorHandler(400, 'Email already in use'));
-            u.email = user.email;
-          }
-          await u.save();
-        }
-      }
-    } else {
-      // update embedded contact fields if no linked user
-      if (user) {
-        if (user.name) sp.name = user.name;
-        if (user.phone) sp.phone = user.phone;
-        if (user.email) sp.email = user.email;
-        if (user.profilePicture) sp.profilePicture = user.profilePicture;
-        if (user.gender) sp.gender = user.gender;
-        if (user.dob) sp.dob = user.dob;
-      }
-    }
-
     await sp.save();
 
     const updated = await Staff.findById(id)
-      .populate({ path: 'userId', select: 'name email phone profilePicture gender dob' })
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
@@ -295,16 +267,6 @@ export const listStaffCustomer = async (req, res, next) => {
     const skip = (pg - 1) * lim;
 
     const pipeline = [
-      // join user if linked
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'userId',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
       // only active staff shown to customers
       { $match: { isActive: true } },
     ];
@@ -336,10 +298,10 @@ export const listStaffCustomer = async (req, res, next) => {
       pipeline.push({
         $match: {
           $or: [
-            { 'user.name': re },
-            { name: re }, // fallback embedded name
+            { name: re },
             { specializations: re },
             { bio: re },
+            { description: re },
             { 'location.address': re },
             { 'location.city': re },
           ],
@@ -384,9 +346,9 @@ export const listStaffCustomer = async (req, res, next) => {
           rating: 1,
           companyId: 1,
           location: 1,
-          'user._id': 1,
-          'user.name': 1,
-          'user.profilePicture': 1,
+          description: 1,
+          availableHours: 1,
+          availableDays: 1,
         },
       }
     );
@@ -395,8 +357,8 @@ export const listStaffCustomer = async (req, res, next) => {
 
     const data = items.map((p) => ({
       id: p._id,
-      name: (p.user && p.user.name) || p.name || '',
-      avatar: (p.user && p.user.profilePicture) || p.profilePicture || null,
+      name: p.name || '',
+      avatar: p.profilePicture || null,
       employmentType: p.employmentType,
       feeText: p.hourlyRate ? `₹ ${p.hourlyRate}/hr` : (p.dailyRate ? `₹ ${p.dailyRate}/day` : ''),
       hourlyRate: p.hourlyRate,
@@ -406,6 +368,9 @@ export const listStaffCustomer = async (req, res, next) => {
       rating: p.rating || 0,
       companyId: p.companyId || null,
       location: p.location || null,
+      description: p.description || null,
+      availableHours: p.availableHours || null,
+      availableDays: p.availableDays || null,
     }));
 
     return res.status(200).json({
@@ -426,7 +391,6 @@ export const staffDetailsForCustomer = async (req, res, next) => {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return next(errorHandler(400, 'Invalid id'));
 
     const staff = await Staff.findById(id)
-      .populate({ path: 'userId', select: 'name profilePicture' })
       .populate({ path: 'companyId', select: 'name phone email address' })
       .lean();
 
@@ -439,17 +403,20 @@ export const staffDetailsForCustomer = async (req, res, next) => {
       status: 'success',
       data: {
         id: staff._id,
-        name: staff.userId?.name || staff.name,
-        avatar: staff.userId?.profilePicture || staff.profilePicture || null,
+        name: staff.name,
+        avatar: staff.profilePicture || null,
         employmentType: staff.employmentType,
         shiftInfo: staff.availability?.weekly?.shiftHoursPerDay || null,
         hourlyRate: staff.hourlyRate,
         experienceYears: staff.experienceYears,
         location: staff.location,
-        phone: staff.phone || (staff.userId ? undefined : null), // show only if present
+        phone: staff.phone || null,
         specializations: staff.specializations || [],
         bio: staff.bio || '',
+        description: staff.description || '',
         availability: staff.availability || {},
+        availableHours: staff.availableHours || null,
+        availableDays: staff.availableDays || null,
         company: staff.companyId || null,
         feedbacks: feedbacks.map(f => ({ id: f._id, rating: f.rating, comment: f.comment, authorName: f.authorName, createdAt: f.createdAt }))
       }

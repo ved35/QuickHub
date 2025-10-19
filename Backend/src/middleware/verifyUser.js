@@ -2,7 +2,15 @@ import jwt from 'jsonwebtoken';
 import { errorHandler } from './errorHandler.js';
 
 export const verifyToken = (req, res, next) => {
-  const token = req.cookies.jwt;
+  let token = req?.cookies?.jwt || req.headers.authorization;
+  
+  if (req?.headers?.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+  
   console.log('Token :', token);
 
   if (!token) {

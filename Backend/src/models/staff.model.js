@@ -19,21 +19,15 @@ const AvailabilitySchema = new mongoose.Schema(
 
 const StaffSchema = new mongoose.Schema(
   {
-    // allow staff to be either linked to a registered user OR be a company-created record
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: false, // changed from required:true -> optional
-      index: true,
-    },
-
-    // fallback contact/profile fields for staff created by company (no user account)
+    // Staff contact/profile fields
     name: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
     phone: { type: String },
     profilePicture: { type: String },
     gender: { type: String },
     dob: { type: Date },
+    address: { type: String, trim: true },
+    description: { type: String, trim: true },
 
     companyId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -50,7 +44,23 @@ const StaffSchema = new mongoose.Schema(
     specializations: [{ type: String, index: true }], // service names or ids
     bio: { type: String },
     experienceYears: { type: Number, default: 0 },
-    availability: { type: AvailabilitySchema, default: () => ({}) },
+    availability: { 
+      type: mongoose.Schema.Types.Mixed, 
+      default: () => ({}) 
+    },
+    // Availability fields for different employment types (optional)
+    availableHours: {
+      // For part-time staff only
+      startTime: { type: String }, // e.g., "09:00"
+      endTime: { type: String },   // e.g., "17:00"
+      daysPerWeek: { type: Number, min: 1, max: 6 }
+    },
+    availableDays: {
+      // For full-time staff only
+      workingDays: [{ type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] }],
+      startTime: { type: String }, // e.g., "09:00"
+      endTime: { type: String }    // e.g., "18:00"
+    },
     isActive: { type: Boolean, default: true, index: true },
     rating: { type: Number, default: 0 },
     totalReviews: { type: Number, default: 0 },
@@ -72,6 +82,22 @@ const StaffSchema = new mongoose.Schema(
 
 StaffSchema.index({ companyId: 1, employmentType: 1 });
 StaffSchema.index({ 'location.coordinates': '2dsphere' });
+
+// Pre-save middleware to validate availability fields based on employment type
+StaffSchema.pre('save', function(next) {
+  if (this.employmentType === 'full_time') {
+    // For full-time staff, clear availableHours if it exists
+    if (this.availableHours) {
+      this.availableHours = undefined;
+    }
+  } else if (this.employmentType === 'part_time') {
+    // For part-time staff, clear availableDays if it exists
+    if (this.availableDays) {
+      this.availableDays = undefined;
+    }
+  }
+  next();
+});
 
 // use consistent model name
 export default mongoose.models.Staff || mongoose.model('Staff', StaffSchema);
