@@ -1,10 +1,12 @@
 import express from 'express';
 import { verifyToken } from '../middleware/verifyUser.js';
-import { createBooking, listCustomerBookings } from '../controllers/booking.controller.js';
+import * as bookingController from '../controllers/booking.controller.js';
+
 
 const bookingRouter = express.Router();
 
-bookingRouter.post('/customer/bookings', verifyToken, createBooking);
-bookingRouter.get('/customer/bookings', verifyToken, listCustomerBookings);
+bookingRouter.post('/customwe/book-service',verifyToken,bookingController.createBooking);
+
+bookingRouter.get('/customer/book-services-list', verifyToken,bookingController.listCustomerBookings); 
 
 export default bookingRouter;
