@@ -44,10 +44,14 @@ const BookingSchema = new mongoose.Schema(
       enum: ['Unpaid', 'Paid'],
       default: 'Unpaid',
     },
+    transactionId: { type: String, default: null },
     rating: { type: Number },
     review: { type: String },
     notes: { type: String },
     location: { address: String, city: String, state: String, pincode: String },
+    rejectionReason: { type: String },
+    rejectedAt: { type: Date },
+    acceptedAt: { type: Date },
   },
   { timestamps: true }
 );

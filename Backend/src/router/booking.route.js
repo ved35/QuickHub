@@ -4,16 +4,10 @@ import * as bookingController from '../controllers/booking.controller.js';
 
 const bookingRouter = express.Router();
 
-bookingRouter.post(
-  '/customwe/book-service',
-  verifyToken,
-  bookingController.createBooking
-);
+bookingRouter.post('/create-book-service',verifyToken,bookingController.createBooking);
 
-bookingRouter.get(
-  '/customer/book-services-list',
-  verifyToken,
-  bookingController.listCustomerBookings
-);
+bookingRouter.get('/book-services-list',verifyToken,bookingController.listCustomerBookings);
+
+bookingRouter.post('/:bookingId/cancel',verifyToken,bookingController.cancelBooking);
 
 export default bookingRouter;

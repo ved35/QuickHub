@@ -8,6 +8,7 @@ import userRouter from './router/user.route.js';
 import authRouter from './router/auth.route.js';
 import staffRouter from './router/staff.route.js';
 import bookingRouter from './router/booking.route.js';
+import companyRouter from './router/company.route.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/staff', staffRouter);
 app.use('/api/booking', bookingRouter);
+app.use('/api/company', companyRouter);
 
 app.use((error, req, res, next) => {
   const statusCode = error.statusCode || 500;
@@ -60,15 +62,15 @@ app.use((error, req, res, next) => {
   });
 });
 
-console.log('NODE_ENV :- ', process.env.NODE_ENV, __dirname);
+//console.log('NODE_ENV :- ', process.env.NODE_ENV, __dirname);
 
-if (process.env.NODE_ENV === 'Production') {
-  app.use(express.static(path.join(__dirname, '../Frontend/dist')));
+// if (process.env.NODE_ENV === 'Production') {
+//   app.use(express.static(path.join(__dirname, '../Frontend/dist')));
 
-  app.use((req, res) => {
-    res.sendFile(path.join(__dirname, '../Frontend', 'dist', 'index.html'));
-  });
-}
+//   app.use((req, res) => {
+//     res.sendFile(path.join(__dirname, '../Frontend', 'dist', 'index.html'));
+//   });
+// }
 
 app.listen(PORT, () => {
   connectDB();

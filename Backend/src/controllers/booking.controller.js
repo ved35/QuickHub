@@ -30,9 +30,10 @@ export const createBooking = async (req, res, next) => {
     const staff = await Staff.findById(staffId).lean();
     if (!staff || staff.isActive === false)
       return next(errorHandler(404, 'Staff not found or inactive'));
+
     if (
       Array.isArray(staff.specializations) &&
-      staff.specializations.length &&
+      staff.specializations.length > 0 &&
       !staff.specializations.includes(service)
     ) {
       return next(
@@ -71,8 +72,10 @@ export const createBooking = async (req, res, next) => {
 
     const booking = await Booking.create({
       referenceNo: generateReferenceNo(),
-      userId: req.user?.id ? mongoose.Types.ObjectId(req.user.id) : undefined,
-      staffId: mongoose.Types.ObjectId(staffId),
+      userId: req.user?.id
+        ? new mongoose.Types.ObjectId(req.user.id)
+        : undefined,
+      staffId: new mongoose.Types.ObjectId(staffId),
       service,
       employmentType,
       shiftHoursPerDay,
@@ -111,7 +114,7 @@ export const listCustomerBookings = async (req, res, next) => {
     const lim = Math.max(1, Math.min(100, Number(limit)));
     const skip = (pg - 1) * lim;
 
-    const match = { userId: mongoose.Types.ObjectId(userId) };
+    const match = { userId: new mongoose.Types.ObjectId(userId) };
     if (services) {
       const arr = String(services)
         .split(',')
@@ -173,6 +176,7 @@ export const listCustomerBookings = async (req, res, next) => {
           shiftHoursPerDay: 1,
           timeWindowPerDay: 1,
           feeSnapshot: 1,
+          transactionId: 1,
           rating: 1,
           review: 1,
           staff: {
@@ -210,6 +214,10 @@ export const listCustomerBookings = async (req, res, next) => {
       canPay: b.status === 'Confirmed' || b.status === 'Completed',
       canReview: b.status === 'Completed' && !b.rating,
       rating: b.rating || null,
+      transactionId:
+        b.status === 'Confirmed' || b.status === 'Completed'
+          ? b.transactionId
+          : null,
     }));
 
     return res
@@ -218,5 +226,51 @@ export const listCustomerBookings = async (req, res, next) => {
   } catch (err) {
     console.error('listCustomerBookings error', err);
     return next(errorHandler(500, 'Failed to fetch bookings'));
+  }
+};
+
+export const cancelBooking = async (req, res, next) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.user?.id;
+
+    if (!bookingId || !mongoose.Types.ObjectId.isValid(bookingId)) {
+      return next(errorHandler(400, 'Invalid booking ID'));
+    }
+
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return next(errorHandler(401, 'Unauthorized'));
+    }
+
+    const booking = await Booking.findOne({
+      _id: new mongoose.Types.ObjectId(bookingId),
+      userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!booking) {
+      return next(errorHandler(404, 'Booking not found'));
+    }
+
+    // Only allow cancellation of Pending bookings
+    if (booking.status !== 'Pending') {
+      return next(errorHandler(400, 'Only pending bookings can be cancelled'));
+    }
+
+    // Update booking status to Cancelled
+    booking.status = 'Cancelled';
+    await booking.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Booking cancelled successfully',
+      data: {
+        id: booking._id,
+        referenceNo: booking.referenceNo,
+        status: booking.status,
+      },
+    });
+  } catch (err) {
+    console.error('cancelBooking error', err);
+    return next(errorHandler(500, 'Failed to cancel booking'));
   }
 };
