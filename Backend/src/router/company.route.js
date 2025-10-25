@@ -9,10 +9,10 @@ import {
 const companyRouter = express.Router();
 
 // Company Dashboard - all bookings with filters
-companyRouter.get('/dashboard/bookings', verifyToken, dashboardBookings);
+companyRouter.get('/dashboard', verifyToken, dashboardBookings);
 
 // Booking management
-companyRouter.get('/bookings/:bookingId', verifyToken, getBookingDetails);
+companyRouter.get('/booking-detail/:bookingId', verifyToken, getBookingDetails);
 companyRouter.post('/bookings/:bookingId/manage', verifyToken, manageBooking);
 
 export default companyRouter;
