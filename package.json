@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/ved35/QuickHub#readme",
   "dependencies": {
+    "express": "^5.1.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   }
