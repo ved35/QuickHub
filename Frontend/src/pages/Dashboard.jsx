@@ -15,7 +15,7 @@ const Dashboard = () => {
             
           </div>
         </main>
-            <div className="pb-4  text-xs w-full text-white text-center bottom-0 " style={{color: 'var(--text-secondary)'}}>
+            <div className="pt-3 pb-2  text-xs w-full theme-primary text-center bottom-0 " style={{color: 'var(--text-secondary)'}}>
               copyright 2025. All rights reserved.
             </div>
       </div>
