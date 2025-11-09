@@ -62,15 +62,15 @@ app.use((error, req, res, next) => {
   });
 });
 
-//console.log('NODE_ENV :- ', process.env.NODE_ENV, __dirname);
+console.log('NODE_ENV :- ', process.env.NODE_ENV, __dirname);
 
-// if (process.env.NODE_ENV === 'Production') {
-//   app.use(express.static(path.join(__dirname, '../Frontend/dist')));
+if (process.env.NODE_ENV === 'Production') {
+  app.use(express.static(path.join(__dirname, '../Frontend/dist')));
 
-//   app.use((req, res) => {
-//     res.sendFile(path.join(__dirname, '../Frontend', 'dist', 'index.html'));
-//   });
-// }
+  app.use((req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend', 'dist', 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   connectDB();
