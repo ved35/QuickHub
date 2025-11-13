@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { errorHandler } from '../middleware/errorHandler.js';
 import Staff from '../models/staff.model.js';
 import Booking from '../models/booking.model.js';
+import Notification from '../models/notification.model.js';
+import User from '../models/user.model.js';
 
 const generateReferenceNo = () => {
   const now = new Date();
@@ -70,11 +72,18 @@ export const createBooking = async (req, res, next) => {
       total: amount,
     };
 
+    // Get customer/user info for notification
+    const customerId = req.user?.id
+      ? new mongoose.Types.ObjectId(req.user.id)
+      : undefined;
+    const customer = customerId
+      ? await User.findById(customerId).select('name').lean()
+      : null;
+    const customerName = customer?.name || 'Unknown Customer';
+
     const booking = await Booking.create({
       referenceNo: generateReferenceNo(),
-      userId: req.user?.id
-        ? new mongoose.Types.ObjectId(req.user.id)
-        : undefined,
+      userId: customerId,
       staffId: new mongoose.Types.ObjectId(staffId),
       service,
       employmentType,
@@ -88,6 +97,104 @@ export const createBooking = async (req, res, next) => {
       notes,
       location,
     });
+
+    // Create notification for company when booking is created
+    try {
+      const staffWithCompany = await Staff.findById(staffId)
+        .populate({
+          path: 'companyId',
+          select: 'name email',
+        })
+        .select('name companyId')
+        .lean();
+
+      if (staffWithCompany?.companyId) {
+        const company = staffWithCompany.companyId;
+        const companyId = company._id;
+        const companyName = company.name || 'Unknown Company';
+        const staffName = staffWithCompany.name || 'Unknown Staff';
+
+        // Find company user(s) - try to match by company email first
+        let companyUsers = [];
+        if (company.email) {
+          companyUsers = await User.find({
+            userType: 'company',
+            email: company.email,
+            isActive: true,
+          }).select('_id').lean();
+        }
+
+        // If no user found by email, we'll still create the notification
+        // with companyId so it can be retrieved by company users who match this company
+
+        // Format date and time for notification
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+        const timeStr = now
+          .toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
+          .toLowerCase();
+
+        // Create notification for each company user found
+        if (companyUsers.length > 0) {
+          // Create notification for each company user
+          const notifications = companyUsers.map((companyUser) => ({
+            userId: companyUser._id,
+            type: 'booking_request',
+            title: 'New Booking Request',
+            message: `${customerName} has requested to hire ${staffName} for ${service}.`,
+            bookingId: booking._id,
+            companyId: companyId,
+            companyName: companyName,
+            staffId: new mongoose.Types.ObjectId(staffId),
+            staffName: staffName,
+            statusMessage: `Requested on ${dateStr} ${timeStr}`,
+            isRead: false,
+          }));
+
+          await Notification.insertMany(notifications);
+        } else {
+          // If no company user found by email match, we still create a notification
+          // but we need a userId. Find the first active company user as a placeholder.
+          // The listing API will filter by companyId, so this notification will be
+          // visible to the correct company user when they log in (if email matches)
+          const placeholderUser = await User.findOne({
+            userType: 'company',
+            isActive: true,
+          }).select('_id').lean();
+
+          if (placeholderUser) {
+            await Notification.create({
+              userId: placeholderUser._id,
+              type: 'booking_request',
+              title: 'New Booking Request',
+              message: `${customerName} has requested to hire ${staffName} for ${service}.`,
+              bookingId: booking._id,
+              companyId: companyId,
+              companyName: companyName,
+              staffId: new mongoose.Types.ObjectId(staffId),
+              staffName: staffName,
+              statusMessage: `Requested on ${dateStr} ${timeStr}`,
+              isRead: false,
+            });
+          } else {
+            console.warn(
+              `No company user found for company ${companyName} (${companyId}). Notification not created.`
+            );
+          }
+        }
+      }
+    } catch (notificationError) {
+      // Log error but don't fail the booking creation
+      console.error('Error creating company notification:', notificationError);
+    }
 
     return res.status(201).json({ status: 'success', data: booking });
   } catch (err) {

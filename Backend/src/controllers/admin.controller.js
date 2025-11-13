@@ -30,6 +30,15 @@ export const adminSignIn = async (req, res, next) => {
       return next(errorHandler(400, 'Invalid username or password'));
 
     const token = generateToken(adminUser._id, adminUser.isAdmin, res);
+
+    // Store token in user table
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+    await userModel.findByIdAndUpdate(adminUser._id, {
+      token,
+      tokenExpiresAt: expiresAt,
+    });
+
     const { password: pass, ...rest } = adminUser._doc;
 
     return res.status(200).json({

@@ -3,6 +3,7 @@ import { errorHandler } from '../middleware/errorHandler.js';
 import Staff from '../models/staff.model.js';
 import Booking from '../models/booking.model.js';
 import User from '../models/user.model.js';
+import Notification from '../models/notification.model.js';
 
 // GET /company/dashboard/bookings - Company dashboard with all bookings
 export const dashboardBookings = async (req, res, next) => {
@@ -194,7 +195,20 @@ export const manageBooking = async (req, res, next) => {
 
     const booking = await Booking.findById(
       new mongoose.Types.ObjectId(bookingId)
-    );
+    )
+      .populate({
+        path: 'staffId',
+        select: 'name companyId',
+        populate: {
+          path: 'companyId',
+          select: 'name',
+        },
+      })
+      .populate({
+        path: 'userId',
+        select: 'name',
+      })
+      .lean();
 
     if (!booking) {
       return next(errorHandler(404, 'Booking not found'));
@@ -205,20 +219,80 @@ export const manageBooking = async (req, res, next) => {
       return next(errorHandler(400, 'Only pending bookings can be managed'));
     }
 
+    // Get company and staff information
+    const staff = booking.staffId;
+    const company = staff?.companyId;
+    const companyName = company?.name || 'Unknown Company';
+    const staffName = staff?.name || 'Unknown Staff';
+    const companyId = company?._id || staff?.companyId;
+
     // Update booking based on action
+    const updateData = {};
     if (action === 'accept') {
-      booking.status = 'Confirmed';
-      booking.acceptedAt = new Date();
-      booking.rejectionReason = undefined;
-      booking.rejectedAt = undefined;
+      updateData.status = 'Confirmed';
+      updateData.acceptedAt = new Date();
+      updateData.rejectionReason = undefined;
+      updateData.rejectedAt = undefined;
     } else if (action === 'reject') {
-      booking.status = 'Rejected';
-      booking.rejectionReason = reason.trim();
-      booking.rejectedAt = new Date();
-      booking.acceptedAt = undefined;
+      updateData.status = 'Rejected';
+      updateData.rejectionReason = reason.trim();
+      updateData.rejectedAt = new Date();
+      updateData.acceptedAt = undefined;
     }
 
-    await booking.save();
+    await Booking.findByIdAndUpdate(
+      new mongoose.Types.ObjectId(bookingId),
+      updateData
+    );
+
+    // Format date and time for status message
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const timeStr = now
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      .toLowerCase();
+
+    // Create notification for the customer
+    let notificationType, title, message, statusMessage;
+
+    if (action === 'accept') {
+      notificationType = 'booking_accepted';
+      title = 'Request Accepted';
+      message = `${companyName} have accepted your request to hire ${staffName}.`;
+      statusMessage = `Completed on ${dateStr} ${timeStr}`;
+    } else {
+      notificationType = 'booking_rejected';
+      title = 'Request Rejected';
+      message = `${companyName} have rejected your request to hire ${staffName}.`;
+      statusMessage = `Rejected due to ${reason.trim()} on ${dateStr} ${timeStr}`;
+    }
+
+    // Create notification
+    await Notification.create({
+      userId: booking.userId._id,
+      type: notificationType,
+      title,
+      message,
+      bookingId: new mongoose.Types.ObjectId(bookingId),
+      companyId: companyId ? new mongoose.Types.ObjectId(companyId) : undefined,
+      companyName,
+      staffId: staff?._id
+        ? new mongoose.Types.ObjectId(staff._id)
+        : undefined,
+      staffName,
+      actionStatus: action === 'accept' ? 'accepted' : 'rejected',
+      statusMessage,
+      rejectionReason: action === 'reject' ? reason.trim() : undefined,
+      isRead: false,
+    });
 
     return res.status(200).json({
       status: 'success',
@@ -226,10 +300,10 @@ export const manageBooking = async (req, res, next) => {
       data: {
         id: booking._id,
         referenceNo: booking.referenceNo,
-        status: booking.status,
-        acceptedAt: booking.acceptedAt,
-        rejectionReason: booking.rejectionReason,
-        rejectedAt: booking.rejectedAt,
+        status: updateData.status,
+        acceptedAt: updateData.acceptedAt,
+        rejectionReason: updateData.rejectionReason,
+        rejectedAt: updateData.rejectedAt,
       },
     });
   } catch (err) {

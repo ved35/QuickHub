@@ -9,6 +9,7 @@ import authRouter from './router/auth.route.js';
 import staffRouter from './router/staff.route.js';
 import bookingRouter from './router/booking.route.js';
 import companyRouter from './router/company.route.js';
+import notificationRouter from './router/notification.route.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/staff', staffRouter);
 app.use('/api/booking', bookingRouter);
 app.use('/api/company', companyRouter);
+app.use('/api/notification', notificationRouter);
 
 app.use((error, req, res, next) => {
   const statusCode = error.statusCode || 500;

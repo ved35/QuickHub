@@ -64,6 +64,14 @@ export const signUp = async (req, res, next) => {
     const { password: pass, ...rest } = newUser._doc;
     const token = generateToken(newUser._id, newUser.isAdmin, res);
 
+    // Store token in user table
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+    await userModel.findByIdAndUpdate(newUser._id, {
+      token,
+      tokenExpiresAt: expiresAt,
+    });
+
     res.status(201).json({
       status: 'success',
       message: 'Sign up successful',
@@ -97,6 +105,14 @@ export const signIn = async (req, res, next) => {
     }
 
     const token = generateToken(validUser._id, validUser.isAdmin, res);
+
+    // Store token in user table
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+    await userModel.findByIdAndUpdate(validUser._id, {
+      token,
+      tokenExpiresAt: expiresAt,
+    });
 
     const { password: pass, ...rest } = validUser._doc;
 
@@ -316,37 +332,20 @@ export const changePassword = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    const token =
-      req.headers.authorization || req.cookies.jwt || req.headers.cookie;
-    console.log('Logout request by user :-', token);
-    if (!token) {
-      return next(errorHandler(400, 'Authorization token missing'));
+    const userId = req.user?.id || req.user?._id;
+
+    if (!userId) {
+      return next(errorHandler(401, 'Unauthorized'));
     }
 
-    const decoded = jwt.decode(token) || {};
-    console.log('Logout decoded by user :-', decoded);
-    const expiresAt = decoded.exp
-      ? new Date(decoded.exp * 1000)
-      : new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const userId =
-      req.user?.id ||
-      req.user?._id ||
-      decoded.sub ||
-      decoded.id ||
-      decoded.userId;
+    // Clear token from user table
+    await userModel.findByIdAndUpdate(userId, {
+      token: null,
+      tokenExpiresAt: null,
+    });
 
-    try {
-      await TokenBlacklist.create({
-        token,
-        userId,
-        expiresAt,
-        meta: { ip: req.ip },
-      });
-    } catch (err) {
-      if (err.code && err.code !== 11000) {
-        console.error('Token blacklist save error', err);
-      }
-    }
+    // Clear cookie
+    res.clearCookie('jwt');
 
     return res
       .status(200)
