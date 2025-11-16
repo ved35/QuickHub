@@ -217,13 +217,14 @@ export const signIn = async (req, res, next) => {
     console.log("Updated user token:", updatedUser.token?.substring(0, 20));
     console.log("Updated FCM token:", updatedUser.fcmtoken);
 
-    // Remove password from response
-    const { password: pass, ...rest } = updatedUser._doc;
+    // Convert to plain object and remove password, include all other fields
+    const userData = updatedUser.toObject();
+    delete userData.password;
 
     return res.status(200).json({
       status: "success",
       message: "Login successful",
-      data: rest,
+      data: userData,
       token,
     });
   } catch (err) {
