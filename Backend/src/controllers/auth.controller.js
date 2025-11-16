@@ -85,7 +85,7 @@ export const signUp = async (req, res, next) => {
 };
 
 export const signIn = async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, fcmtoken } = req.body;
 
   if (!email || !password || email === '' || password === '') {
     return next(errorHandler(400, 'All fields are required'));
@@ -106,15 +106,24 @@ export const signIn = async (req, res, next) => {
 
     const token = generateToken(validUser._id, validUser.isAdmin, res);
 
-    // Store token in user table
+    // Store token and FCM token in user table
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-    await userModel.findByIdAndUpdate(validUser._id, {
+    const updateData = {
       token,
       tokenExpiresAt: expiresAt,
-    });
+    };
+    
+    // Add FCM token if provided
+    if (fcmtoken && fcmtoken !== '') {
+      updateData.fcmtoken = fcmtoken;
+    }
+    
+    await userModel.findByIdAndUpdate(validUser._id, updateData);
 
-    const { password: pass, ...rest } = validUser._doc;
+    // Fetch updated user to include FCM token in response
+    const updatedUser = await userModel.findById(validUser._id);
+    const { password: pass, ...rest } = updatedUser._doc;
 
     res.status(200).json({
       status: 'success',
