@@ -197,8 +197,7 @@ export const signIn = async (req, res, next) => {
       updateFields.fcmtoken = fcmtoken;
     }
 
-    console.log("Updating user:", validUser._id.toString());
-    console.log("Update fields:", updateFields);
+
 
     // 5. UPDATE using $set (IMPORTANT FIX)
     const updatedUser = await userModel.findByIdAndUpdate(
@@ -214,9 +213,7 @@ export const signIn = async (req, res, next) => {
       return next(errorHandler(500, "Failed to update user"));
     }
 
-    console.log("Updated user token:", updatedUser.token?.substring(0, 20));
-    console.log("Updated FCM token:", updatedUser.fcmtoken);
-
+    
     // Convert to plain object and remove password, include all other fields
     const userData = updatedUser.toObject();
     delete userData.password;
