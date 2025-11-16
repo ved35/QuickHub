@@ -109,21 +109,18 @@ export const signIn = async (req, res, next) => {
     // Store token and FCM token in user table
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-    const updateData = {
-      token,
-      tokenExpiresAt: expiresAt,
-    };
+    
+    validUser.token = token;
+    validUser.tokenExpiresAt = expiresAt;
     
     // Add FCM token if provided
     if (fcmtoken && fcmtoken !== '') {
-      updateData.fcmtoken = fcmtoken;
+      validUser.fcmtoken = fcmtoken;
     }
     
-    await userModel.findByIdAndUpdate(validUser._id, updateData);
+    await validUser.save();
 
-    // Fetch updated user to include FCM token in response
-    const updatedUser = await userModel.findById(validUser._id);
-    const { password: pass, ...rest } = updatedUser._doc;
+    const { password: pass, ...rest } = validUser._doc;
 
     res.status(200).json({
       status: 'success',
