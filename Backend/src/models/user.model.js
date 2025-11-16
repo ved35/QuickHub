@@ -58,7 +58,7 @@ const userSchema = new mongoose.Schema(
     },
     token: {
       type: String,
-      default: null,
+      default: "",
       index: true,
     },
     tokenExpiresAt: {
@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema(
     },
     fcmtoken: {
       type: String,
-      default: null,
+      default: "",
     },
   },
   {
