@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create SSH key 
+        run: |
+          echo "${{ secrets.KEY }}" > /tmp/key.pem
+          chmod 600 /tmp/key.pem
+
+      - name: Clean old folder
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
+            rm -rf /home/ubuntu/node-app
+            mkdir -p /home/ubuntu/node-app
+          EOF
+
+      - name: Copy code 
+        run: |
+          scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/node-app
+
+
+           
