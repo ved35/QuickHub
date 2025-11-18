@@ -29,4 +29,19 @@ jobs:
           scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/node-app
 
 
+      - name: Run Backend 
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
+            cd /home/ubuntu/node-app/Backend
+            npm install
+            sudo npm install -g pm2
+            
+            pm2 stop backend || true
+            pm2 start src/index.js --name backend
+
+            pm2 save
+          EOF
+    
+
+
            
