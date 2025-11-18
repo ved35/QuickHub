@@ -29,7 +29,7 @@ jobs:
           scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/node-app
 
 
-      - name: Run Backend (Simple PM2)
+      - name: Run Backend 
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
             cd /home/ubuntu/node-app/Backend
