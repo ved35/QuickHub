@@ -17,14 +17,14 @@ jobs:
           echo "${{ secrets.KEY }}" > /tmp/key.pem
           chmod 600 /tmp/key.pem
 
-      - name: Clean old folder
+      - name: code clean 
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
             rm -rf /home/ubuntu/node-app
             mkdir -p /home/ubuntu/node-app
           EOF
 
-      - name: Copy code 
+      - name: deploy initiates
         run: |
           scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/node-app
 
