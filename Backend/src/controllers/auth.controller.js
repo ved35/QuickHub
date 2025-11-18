@@ -120,44 +120,44 @@ export const signIn = async (req, res, next) => {
     if (fcmtoken && fcmtoken !== '' && fcmtoken !== null && fcmtoken !== undefined) {
       updateFields.fcmtoken = fcmtoken;
     }
-    
-    console.log('Token generated:', token ? 'Yes' : 'No', token ? token.substring(0, 20) + '...' : '');
-    console.log('Updating user ID:', validUser._id.toString());
-    console.log('Update fields:', JSON.stringify(updateFields, null, 2));
-    
-    try {
-      // Update user document (matching signUp pattern)
-      const updateResult = await userModel.findByIdAndUpdate(validUser._id, updateFields);
-      console.log('Update result:', updateResult ? 'Success' : 'Failed');
-    } catch (updateError) {
-      console.error('Error during update:', updateError);
-      throw updateError;
-    }
-    
+    const updatedUser = await userModel.findByIdAndUpdate(
+      validUser._id,
+      { $set: updateFields },
+      { new: true, runValidators: false }
+    );
+
+
     // Fetch updated user to verify and return
-    const updatedUser = await userModel.findById(validUser._id);
+    // const updatedUser = await userModel.findById(validUser._id);
     
     if (!updatedUser) {
       console.error('Failed to fetch updated user');
       return next(errorHandler(500, 'Failed to update user'));
     }
     
-    console.log('User updated. Token saved:', !!updatedUser.token, updatedUser.token ? updatedUser.token.substring(0, 20) + '...' : '');
-    console.log('FCM Token saved:', !!updatedUser.fcmtoken, updatedUser.fcmtoken || 'Not set');
-    console.log('TokenExpiresAt saved:', !!updatedUser.tokenExpiresAt, updatedUser.tokenExpiresAt);
 
     const { password: pass, ...rest } = updatedUser._doc;
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Login Successfull',
-      data: rest,
-      token,
-    });
-  } catch (error) {
-    console.log('Sign in error :-', error);
-    return next(errorHandler(500, 'Internal server error'));
-  }
+  //   res.status(200).json({
+  //     status: 'success',
+  //     message: 'Login Successfull',
+  //     data: rest,
+  //     token,
+  //   });
+  // } catch (error) {
+  //   console.log('Sign in error :-', error);
+  //   return next(errorHandler(500, 'Internal server error'));
+  // }
+  res.status(200).json({
+    status: 'success',
+    message: 'Login Successful',
+    data: userData,
+    token,
+  });
+} catch (error) {
+  console.log('Sign in error :-', error);
+  return next(errorHandler(500, 'Internal server error'));
+}
 };
 
 // ----------------- FORGOT PASSWORD -----------------
