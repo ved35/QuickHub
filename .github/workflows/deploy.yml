@@ -17,29 +17,24 @@ jobs:
           echo "${{ secrets.KEY }}" > /tmp/key.pem
           chmod 600 /tmp/key.pem
 
-      - name: code clean 
+      - name: Code clean 
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
-            rm -rf /home/ubuntu/node-app
-            mkdir -p /home/ubuntu/node-app
+          rm -rf /home/ubuntu/node-app
+          mkdir -p /home/ubuntu/node-app
           EOF
 
-      - name: deploy initiates
+      - name: Deploy initiates
         run: |
           scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/node-app
 
-
-      - name: Run Backend 
+      - name: Run Backend
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
-            cd /home/ubuntu/node-app/Backend
-            npm install
-            sudo npm install -g pm2
-            pm2 start src/index.js
-            pm2 save
+          cd /home/ubuntu/node-app/Backend
+          npm install
+          sudo npm install -g pm2
+          pm2 delete all || true
+          pm2 start src/index.js
+          pm2 save
           EOF
-
-    
-
-
-           
