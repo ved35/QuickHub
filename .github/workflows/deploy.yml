@@ -12,29 +12,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create SSH key 
+      - name: Create SSH key
         run: |
           echo "${{ secrets.KEY }}" > /tmp/key.pem
           chmod 600 /tmp/key.pem
 
-      - name: Code clean 
+      - name: Code clean
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
-          rm -rf /home/ubuntu/node-app
-          mkdir -p /home/ubuntu/node-app
+            rm -rf /home/ubuntu/node-app
+            mkdir -p /home/ubuntu/node-app
           EOF
 
       - name: Deploy initiates
         run: |
           scp -o StrictHostKeyChecking=no -i /tmp/key.pem -r * .[^.]* ubuntu@${{ secrets.HOST }}:/home/ubuntu/node-app
 
-      - name: Run Backend
+      - name: Run App
         run: |
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ubuntu@${{ secrets.HOST }} << 'EOF'
-          cd /home/ubuntu/node-app/Backend
-          npm install
-          sudo npm install -g pm2
-          pm2 delete all || true
-          pm2 start src/index.js
-          pm2 save
+            cd /home/ubuntu/node-app
+            npm run build
+
+            cd Backend
+            pm2 stop backend || true
+            pm2 start src/index.js 
+            pm2 save
           EOF
