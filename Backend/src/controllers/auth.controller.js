@@ -106,17 +106,9 @@ export const signIn = async (req, res, next) => {
 
     const token = generateToken(validUser._id, validUser.isAdmin, res);
 
-    // Store token and FCM token in user table
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-    
-    // Prepare update object (matching signUp pattern)
-    const updateFields = {
-      token,
-      tokenExpiresAt: expiresAt,
-    };
-    
-    // Add FCM token if provided
+    // Only store FCM token (token persistence disabled for now)
+    const updateFields = {};
+
     if (fcmtoken && fcmtoken !== '' && fcmtoken !== null && fcmtoken !== undefined) {
       updateFields.fcmtoken = fcmtoken;
     }
