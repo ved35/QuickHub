@@ -84,80 +84,145 @@ export const signUp = async (req, res, next) => {
   }
 };
 
+// export const signIn = async (req, res, next) => {
+//   const { email, password, fcmtoken } = req.body;
+
+//   if (!email || !password || email === '' || password === '') {
+//     return next(errorHandler(400, 'All fields are required'));
+//   }
+
+//   try {
+//     const validUser = await userModel.findOne({ email });
+
+//     if (!validUser) {
+//       return next(errorHandler(404, 'Invalid email or password'));
+//     }
+
+//     const validPassword = bcryptjs.compareSync(password, validUser.password);
+
+//     if (!validPassword) {
+//       return next(errorHandler(400, 'Invalid email or password'));
+//     }
+
+//     const token = generateToken(validUser._id, validUser.isAdmin, res);
+
+//     // Store token and FCM token in user table
+//     const expiresAt = new Date();
+//     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+    
+//     // Prepare update object (matching signUp pattern)
+//     const updateFields = {
+//       token,
+//       tokenExpiresAt: expiresAt,
+//     };
+    
+//     // Add FCM token if provided
+//     if (fcmtoken && fcmtoken !== '' && fcmtoken !== null && fcmtoken !== undefined) {
+//       updateFields.fcmtoken = fcmtoken;
+//     }
+//     const updatedUser = await userModel.findByIdAndUpdate(
+//       validUser._id,
+//       { $set: updateFields },
+//       { new: true, runValidators: false }
+//     );
+
+
+//     // Fetch updated user to verify and return
+//     // const updatedUser = await userModel.findById(validUser._id);
+    
+//     if (!updatedUser) {
+//       console.error('Failed to fetch updated user');
+//       return next(errorHandler(500, 'Failed to update user'));
+//     }
+    
+
+//     const { password: pass, ...rest } = updatedUser._doc;
+
+//   //   res.status(200).json({
+//   //     status: 'success',
+//   //     message: 'Login Successfull',
+//   //     data: rest,
+//   //     token,
+//   //   });
+//   // } catch (error) {
+//   //   console.log('Sign in error :-', error);
+//   //   return next(errorHandler(500, 'Internal server error'));
+//   // }
+//   res.status(200).json({
+//     status: 'success',
+//     message: 'Login Successful',
+//     data: rest,
+//     token,
+//   });
+// } catch (error) {
+//   console.log('Sign in error :-', error);
+//   return next(errorHandler(500, 'Internal server error'));
+// }
+// };
+
 export const signIn = async (req, res, next) => {
-  const { email, password, fcmtoken } = req.body;
-
-  if (!email || !password || email === '' || password === '') {
-    return next(errorHandler(400, 'All fields are required'));
-  }
-
   try {
+    const { email, password, fcmtoken } = req.body;
+
+    // Validate fields
+    if (!email || !password) {
+      return next(errorHandler(400, "Email and password are required"));
+    }
+
+    // Check user
     const validUser = await userModel.findOne({ email });
-
     if (!validUser) {
-      return next(errorHandler(404, 'Invalid email or password'));
+      return next(errorHandler(404, "Invalid email or password"));
     }
 
-    const validPassword = bcryptjs.compareSync(password, validUser.password);
-
-    if (!validPassword) {
-      return next(errorHandler(400, 'Invalid email or password'));
+    // Validate password
+    const isPasswordCorrect = bcryptjs.compareSync(password, validUser.password);
+    if (!isPasswordCorrect) {
+      return next(errorHandler(400, "Invalid email or password"));
     }
 
+    // Generate JWT token
     const token = generateToken(validUser._id, validUser.isAdmin, res);
 
-    // Store token and FCM token in user table
+    // Set token expiry (7 days)
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
-    
-    // Prepare update object (matching signUp pattern)
-    const updateFields = {
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Prepare update fields
+    const updateData = {
       token,
       tokenExpiresAt: expiresAt,
     };
-    
-    // Add FCM token if provided
-    if (fcmtoken && fcmtoken !== '' && fcmtoken !== null && fcmtoken !== undefined) {
-      updateFields.fcmtoken = fcmtoken;
+
+    // Only store FCM token if provided
+    if (fcmtoken && fcmtoken !== "" && fcmtoken !== null) {
+      updateData.fcmtoken = fcmtoken;
     }
+
+    // Update the user in DB
     const updatedUser = await userModel.findByIdAndUpdate(
       validUser._id,
-      { $set: updateFields },
-      { new: true, runValidators: false }
+      { $set: updateData },
+      { new: true }
     );
 
-
-    // Fetch updated user to verify and return
-    // const updatedUser = await userModel.findById(validUser._id);
-    
     if (!updatedUser) {
-      console.error('Failed to fetch updated user');
-      return next(errorHandler(500, 'Failed to update user'));
+      return next(errorHandler(500, "Failed to update user data"));
     }
-    
 
-    const { password: pass, ...rest } = updatedUser._doc;
+    // Remove password before sending response
+    const { password: pw, ...userData } = updatedUser._doc;
 
-  //   res.status(200).json({
-  //     status: 'success',
-  //     message: 'Login Successfull',
-  //     data: rest,
-  //     token,
-  //   });
-  // } catch (error) {
-  //   console.log('Sign in error :-', error);
-  //   return next(errorHandler(500, 'Internal server error'));
-  // }
-  res.status(200).json({
-    status: 'success',
-    message: 'Login Successful',
-    data: rest,
-    token,
-  });
-} catch (error) {
-  console.log('Sign in error :-', error);
-  return next(errorHandler(500, 'Internal server error'));
-}
+    return res.status(200).json({
+      status: "success",
+      message: "Login successful",
+      token,
+      data: userData,
+    });
+  } catch (error) {
+    console.log("SignIn Error:", error);
+    return next(errorHandler(500, "Internal server error"));
+  }
 };
 
 // ----------------- FORGOT PASSWORD -----------------
